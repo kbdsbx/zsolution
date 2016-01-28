@@ -7,6 +7,7 @@ var argv = process.argv.slice( 2 );
 switch ( argv[0] ) {
     case 'init' : 
         var init = require( './js/init.js' );
+        init.init( argv );
         init.init_svn( argv );
         init.init_paths( argv );
         break;

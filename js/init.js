@@ -2,50 +2,90 @@
 
 const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
+const data_file = './data/data.json';
 
-var init = function( argv ) {
-    if ( ! exports.path ) {
-        if ( ! argv[1] ) {
-            exports.name = rl.question( 'Solution name: ' );
-        } else {
-            exports.name = argv[1];
-        }
-    }
+var data_solutions;
 
-    if ( ! exports.path ) {
-        if ( ! argv[2] ) {
-            exports.path = rl.question( 'Solution path: ' );
-        } else {
-            exports.path = argv[2];
-        }
-    }
-
-    if ( ! exports.svn_url ) {
-        if ( ! argv[3] ) {
-            exports.svn_url = rl.question( 'SVN URL (if exists): ' );
-        } else {
-            exports.svn_url = argv[3];
-        }
-    }
-}
-
-exports.init_paths = function( argv ) {
-    init( argv );
-
-    var _path_end = exports.path.substr( -1, 1 );
-    var _path = exports.path + ( _path_end == '/' || _path_end == '\\' ? exports.name : '\\' + exports.name );
-
-    var _sub_folder = {
+var operator = {
+    name: '',
+    varsion: '0.0.0',
+    path: '',
+    svn_url: '',
+    sub_folder: {
         'images' : null,
-        'js' : null,
+        'js' : {
+            'coffee' : null,
+        },
         'css' : {
             'less' : null,
             'sass' : null,
         },
         'lib' : null,
-        'fonts' : null
-    };
+        'fonts' : null,
+    },
+};
 
+exports.init = function( argv ) {
+    // getting solution data
+    data_solutions = JSON.parse( fs.readFileSync( data_file, 'utf8' ) );
+
+    if ( ! operator.name ) {
+        if ( ! argv[1] ) {
+            operator.name = rl.question( 'Solution name: ' );
+        } else {
+            operator.name = argv[1];
+        }
+    }
+
+    if ( data_solutions[operator.name] ) {
+        switch ( rl.question( 'This solution is existed. 1: cover; 2: update; 3: exit; (1)' ) ) {
+            default:
+            case '1':
+                break;
+            case '2':
+                operator = JSON.parse( fs.readFileSync( data_solutions[operator.name] ) );
+                return;
+            case '3':
+                process.exit(0);
+                return;
+        }
+    }
+
+    if ( ! operator.path ) {
+        if ( ! argv[2] ) {
+            operator.path = rl.question( 'Solution path: ' );
+        } else {
+            operator.path = argv[2];
+        }
+    }
+
+    if ( ! operator.svn_url ) {
+        if ( ! argv[3] ) {
+            operator.svn_url = rl.question( 'SVN URL (if exists): ' );
+        } else {
+            operator.svn_url = argv[3];
+        }
+    }
+
+    operator.path = operator.path + ( operator.path.substr( -1, 1 ) == '/' || operator.path.substr( -1, 1 ) == '\\' ? operator.name : '\\' + operator.name );
+
+    if ( ! fs.existsSync( operator.path ) ) {
+        fs.mkdirSync( operator.path );
+        console.log( `created solution folder [${operator.path}] successfully.` );
+    }
+
+    var cur_solution = operator.path + '\\solution.json';
+    data_solutions[operator.name] = cur_solution;
+
+    fs.writeFile( data_file, JSON.stringify( data_solutions ), ( err ) => {
+        if ( err ) { throw err; }
+    } );
+    fs.writeFile( cur_solution, JSON.stringify( operator ), ( err ) => {
+        if ( err ) { throw err; }
+    } );
+}
+
+exports.init_paths = function( argv ) {
     var _mk_folder = function( path, folders ) {
         Object.keys( folders ).forEach( ( f ) => {
             var _sub_path = path + '\\' + f;
@@ -58,30 +98,14 @@ exports.init_paths = function( argv ) {
         } );
     }
 
-    fs.exists( _path, ( exists ) => {
+    fs.exists( operator.path, ( exists ) => {
         if ( exists ) {
-            const rl = require( 'readline' ).createInterface( {
-                input: process.stdin,
-                output: process.stdout
-            } );
-
-            rl.question( 'solution exists, 1:ignore and continue; 2:exit; (1):', ( answer ) => {
-                switch( answer ) {
-                    default:
-                    case '1' :
-                        _mk_folder( _path, _sub_folder );
-                        break;
-                    case '2' :
-                        break;
-                }
-                
-                rl.close();
-            } );
+            _mk_folder( operator.path, operator.sub_folder );
         } else {
-            fs.mkdir( _path, ( err ) => {
+            fs.mkdir( operator.path, ( err ) => {
                 if ( err ) throw err;
                 console.log( `created solution folder [${_path}] successfully.` );
-                _mk_folder( _path, _sub_folder );
+                _mk_folder( _path, operator.sub_folder );
             } );
         }
 
@@ -90,19 +114,13 @@ exports.init_paths = function( argv ) {
 }
 
 exports.init_svn = function( argv ) {
-    init( argv );
-
-    var _url = exports.svn_url;
-    if ( ! _url ) {
+    if ( ! operator.svn_url ) {
         return;
     }
 
-    var _path_end = exports.path.substr( -1, 1 );
-    var _path = exports.path + ( _path_end == '/' || _path_end == '\\' ? exports.name : '\\' + exports.name );
- 
     // todo: svn url verify;
 
     console.log( 'requesting form svn...' );
-    var val = require( 'child_process' ).execSync( `svn checkout ${_url} ${_path}`, { encoding : 'utf-8' } );
+    var val = require( 'child_process' ).execSync( `svn checkout ${operator.svn_url} ${operator.path}`, { encoding : 'utf-8' } );
     console.log( val );
 }

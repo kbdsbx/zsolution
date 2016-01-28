@@ -58,10 +58,10 @@ exports.set = function( argv ) {
 
     for ( var i = 2; i < argv.length; i++ ) {
         switch( argv[i] ) {
-            case '-r' :
+            case '-d' :
                 operator.deep = true;
                 break;
-            case '-d' :
+            case '-r' :
                 operator.remove = true;
                 break;
         }
