@@ -1,0 +1,27 @@
+{
+  "name": "zsolution",
+  "version": "0.1.0",
+  "description": "tiny front-end solution",
+  "main": "z.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kbdsbx/zsolution.git"
+  },
+  "author": "Journey Zhao",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kbdsbx/zsolution/issues"
+  },
+  "homepage": "https://github.com/kbdsbx/zsolution#readme",
+  "devDependencies": {
+    "less": "^2.5.3",
+    "readline-sync": "^1.2.22"
+  },
+  "dependencies": {
+    "less": "^2.5.3",
+    "readline-sync": "^1.2.22"
+  }
+}
