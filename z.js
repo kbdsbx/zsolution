@@ -20,6 +20,11 @@ switch ( argv[0] ) {
         var dc = require( './js/dc.js' );
         dc.dc( argv );
         break;
+    case 'crawler' :
+        var cr = require( './js/crawler.js' );
+        cr.init( argv );
+        cr.snatch();
+        break;
     case 'help' :
         require( './js/help.js' );
         break;

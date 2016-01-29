@@ -46,7 +46,7 @@ exports.init = function( argv ) {
             case '1':
                 break;
             case '2':
-                operator = JSON.parse( fs.readFileSync( data_solutions[operator.name] ) );
+                operator = tools.load_by( data_solutions[operator.name] );
                 return;
             case '3':
                 process.exit(0);
@@ -81,12 +81,8 @@ exports.init = function( argv ) {
     var cur_solution = operator.path + '\\solution.json';
     data_solutions[operator.name] = cur_solution;
 
-    fs.writeFile( data_file, JSON.stringify( data_solutions ), ( err ) => {
-        if ( err ) { throw err; }
-    } );
-    fs.writeFile( cur_solution, JSON.stringify( operator ), ( err ) => {
-        if ( err ) { throw err; }
-    } );
+    tools.save_as( data_file, data_solutions );
+    tools.save_as( cur_solution, operator );
 }
 
 exports.init_paths = function() {

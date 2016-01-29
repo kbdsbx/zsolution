@@ -2,6 +2,7 @@
 
 const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
+const tools = require( './inc.js' );
 const data_file = './data/data.json';
 
 var data_solutions;
@@ -13,7 +14,7 @@ var operator = {
 
 exports.remove = function( argv ) {
     // getting solution data
-    data_solutions = JSON.parse( fs.readFileSync( data_file, 'utf8' ) );
+    data_solutions = tools.load_by( data_file );
 
     if ( ! argv[1] ) {
         operator.name = rl.question( 'Solution name: ' );
@@ -40,9 +41,7 @@ exports.remove = function( argv ) {
     var _rm = JSON.parse( fs.readFileSync( _solution_path, 'utf8' ) );
     data_solutions[operator.name] = undefined;
 
-    fs.writeFile( data_file, JSON.stringify( data_solutions ), ( err ) => {
-        if ( err ) { throw err; };
-    } );
+    tools.save_as( data_file, data_solutions );
 
     if ( operator.remove_file ) {
         if ( _rm.release_folder.indexOf( _rm.path ) == -1 ) {
