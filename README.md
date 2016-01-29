@@ -12,24 +12,32 @@ The zSolution project is supported by the [Node.js](https://github.com/nodejs/no
 $ npm install zsolution
 ```
 
-## Create Solution
+## Solution
 
+### Create
 ```
-$ node z.js init [solution name] [solution path] [svn url]
+$ node z init [solution name] [solution path] [svn url]
 ```
 
 if you need to manage svn in project automatically, you must be download [TortoiseSVN](https://tortoisesvn.net/) commands.
 
+### Remove
+```
+$ node z rm [solution name] [-r]
+```
+
+* **-r**  remove all of file in this solution.
+
 
 ## Tools
 
-### File set
+### File Duplicate Cleaner
 ```
-$ node z.js set [solution path] [-r] [-d]
+$ node z dc [solution path] [-r] [-d]
 ```
 
-* **-r** remove all of repeated files.
-* **-d** including sub-folder.
+* **-r** remove all of duplicatly files.
+* **-d** search including sub-folder.
 
 ## LICENSE
 [ISC](http://opensource.org/licenses/ISC)

@@ -7,13 +7,13 @@ const cr = require( 'crypto' );
 var operator = {
     // folder path;
     path: '',
-    // setting sub-folder;
+    // clean sub-folder;
     deep: false,
     // remove all of repeated files;
     remove: false,
 }
 
-var _setting_folder = function ( path ) {
+var _clean_folder = function ( path ) {
     var path_end = path.substr( -1, 1 );
     fs.readdir( path, ( err, files ) => {
         if ( err ) { throw err; }
@@ -22,7 +22,7 @@ var _setting_folder = function ( path ) {
             f = path + ( path_end == '/' || path_end == '\\' ? f : '\\' + f );
 
             if ( operator.deep && fs.statSync( f ).isDirectory() ) {
-                _setting_folder( f, deep );
+                _clean_folder( f, deep );
                 return;
             }
 
@@ -49,7 +49,7 @@ var _setting_folder = function ( path ) {
     } );
 }
 
-exports.set = function( argv ) {
+exports.dc = function( argv ) {
     if ( ! argv[1] ) {
         operator.path = rl.question( 'Folder path: ' );
     } else {
@@ -69,7 +69,7 @@ exports.set = function( argv ) {
 
     fs.exists( operator.path, ( exists ) => {
         if ( exists ) {
-            _setting_folder( operator.path );
+            _clean_folder( operator.path );
         } else {
             console.log( 'The folder is not exists.' );
         }

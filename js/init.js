@@ -2,6 +2,7 @@
 
 const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
+const tools = require( './inc.js' );
 const data_file = './data/data.json';
 
 var data_solutions;
@@ -11,7 +12,9 @@ var operator = {
     varsion: '0.0.0',
     path: '',
     svn_url: '',
+    release_folder: '',
     sub_folder: {
+        'release' : null,
         'images' : null,
         'js' : {
             'coffee' : null,
@@ -27,7 +30,7 @@ var operator = {
 
 exports.init = function( argv ) {
     // getting solution data
-    data_solutions = JSON.parse( fs.readFileSync( data_file, 'utf8' ) );
+    data_solutions = tools.load_by( data_file );
 
     if ( ! operator.name ) {
         if ( ! argv[1] ) {
@@ -68,6 +71,7 @@ exports.init = function( argv ) {
     }
 
     operator.path = operator.path + ( operator.path.substr( -1, 1 ) == '/' || operator.path.substr( -1, 1 ) == '\\' ? operator.name : '\\' + operator.name );
+    operator.release_folder = operator.path + '\\release';
 
     if ( ! fs.existsSync( operator.path ) ) {
         fs.mkdirSync( operator.path );
@@ -85,7 +89,7 @@ exports.init = function( argv ) {
     } );
 }
 
-exports.init_paths = function( argv ) {
+exports.init_paths = function() {
     var _mk_folder = function( path, folders ) {
         Object.keys( folders ).forEach( ( f ) => {
             var _sub_path = path + '\\' + f;
@@ -113,7 +117,7 @@ exports.init_paths = function( argv ) {
     } );
 }
 
-exports.init_svn = function( argv ) {
+exports.init_svn = function() {
     if ( ! operator.svn_url ) {
         return;
     }
@@ -121,6 +125,6 @@ exports.init_svn = function( argv ) {
     // todo: svn url verify;
 
     console.log( 'requesting form svn...' );
-    var val = require( 'child_process' ).execSync( `svn checkout ${operator.svn_url} ${operator.path}`, { encoding : 'utf-8' } );
+    var val = require( 'child_process' ).execSync( `svn checkout ${operator.svn_url} ${operator.release_folder}`, { encoding : 'utf-8' } );
     console.log( val );
 }
