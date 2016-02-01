@@ -1,6 +1,6 @@
 {
   "name": "zsolution",
-  "version": "0.2.2",
+  "version": "0.3.2",
   "description": "tiny front-end solution",
   "main": "z.js",
   "scripts": {
@@ -23,5 +23,8 @@
   "dependencies": {
     "less": "^2.5.3",
     "readline-sync": "^1.2.22"
+  },
+  "bin": {
+    "z": "./z.js"
   }
 }

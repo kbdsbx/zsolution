@@ -18,20 +18,29 @@ exports.save_as = function( path, data ) {
 }
 
 exports.get = function( url, encoding, callback ) {
-    http.get( url, ( res ) => {
-        if ( res.statusCode == 200 ) {
-            var data = '';
-            if ( encoding ) {
-                res.setEncoding( encoding );
-            }
-            res.on( 'data', function( chunk ) {
-                data += chunk;
-            } );
+    try {
+        http.get( url, ( res ) => {
+            if ( res.statusCode == 200 ) {
+                var data = '';
+                if ( encoding ) {
+                    res.setEncoding( encoding );
+                }
+                res.on( 'data', function( chunk ) {
+                    data += chunk;
+                } );
 
-            res.on( 'end', function() {
-                callback( data );
-            } );
-        }
-    } );
+                res.on( 'end', function() {
+                    res.resume();
+                    return callback( null, data );
+                } );
+
+                res.on( 'error', function( err ) {
+                    console.log( err );
+                } );
+            }
+        } );
+    } catch ( err ) {
+        return callback( err );
+    }
 }
 
