@@ -7,43 +7,38 @@ const data_file = './data/data.json';
 
 var data_solutions;
 
-var operator = {
+var options = {
     name: '',
     remove_file: false,
 }
 
-exports.remove = function( argv ) {
+exports.init = function( opt ) {
     // getting solution data
     data_solutions = tools.load_by( data_file );
 
-    if ( ! argv[1] ) {
-        operator.name = rl.question( 'Solution name: ' );
-    } else {
-        operator.name = argv[1];
+    for ( var attr in opt ) {
+        options[attr] = opt[attr];
+    }
+}
+
+exports.remove = function() {
+
+    if ( ! options.name ) {
+        options.name = rl.question( 'Solution name: ' );
     }
 
-    for ( var i = 2; i < argv.length; i++ ) {
-        switch( argv[i] ) {
-            case '-r' :
-                operator.remove_file = true;
-                break;
-            default:
-                break;
-        }
-    }
-
-    if ( ! data_solutions[operator.name] ) {
+    if ( ! data_solutions[options.name] ) {
         console.error( 'This solution is not exists.' );
         process.exit( 0 );
     }
 
-    var _solution_path = data_solutions[operator.name];
+    var _solution_path = data_solutions[options.name];
     var _rm = JSON.parse( fs.readFileSync( _solution_path, 'utf8' ) );
-    data_solutions[operator.name] = undefined;
+    data_solutions[options.name] = undefined;
 
     tools.save_as( data_file, data_solutions );
 
-    if ( operator.remove_file ) {
+    if ( options.remove_file ) {
         if ( _rm.release_folder.indexOf( _rm.path ) == -1 ) {
             rmdir( _rm.release_folder );
         }

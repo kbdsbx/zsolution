@@ -17,11 +17,8 @@
   },
   "homepage": "https://github.com/kbdsbx/zsolution#readme",
   "devDependencies": {
-    "less": "^2.5.3",
-    "readline-sync": "^1.2.22"
-  },
-  "dependencies": {
-    "less": "^2.5.3",
+    "commander": "^2.9.0",
+    "less-middleware": "^2.0.1",
     "readline-sync": "^1.2.22"
   },
   "bin": {
