@@ -23,30 +23,28 @@ exports.save_as = function( path, data ) {
 }
 
 exports.get = function( url, encoding, callback ) {
-    try {
-        http.get( url, ( res ) => {
-            if ( res.statusCode == 200 ) {
-                var data = '';
-                if ( encoding ) {
-                    res.setEncoding( encoding );
-                }
-                res.on( 'data', function( chunk ) {
-                    data += chunk;
-                } );
-
-                res.on( 'end', function() {
-                    res.resume();
-                    return callback( null, data );
-                } );
-
-                res.on( 'error', function( err ) {
-                    console.log( err );
-                } );
+    http.get( url, ( res ) => {
+        if ( res.statusCode == 200 ) {
+            var data = '';
+            if ( encoding ) {
+                res.setEncoding( encoding );
             }
-        } );
-    } catch ( err ) {
-        return callback( err );
-    }
+            res.on( 'data', function( chunk ) {
+                data += chunk;
+            } );
+
+            res.on( 'end', function() {
+                res.resume();
+                return callback( null, data );
+            } );
+
+            res.on( 'error', function( err ) {
+                callback( err );
+            } );
+        }
+    } ).on( 'error', ( err ) => {
+        callback( err );
+    } );
 }
 
 exports.each = function ( folder, callback ) {

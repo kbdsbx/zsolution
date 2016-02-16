@@ -5,7 +5,7 @@ var program = require( 'commander' );
 process.stdin.setEncoding( 'utf8' );
 
 program
-    .command( 'init [name]' )
+    .command( 'init <name>' )
     .description( 'init new solution.' )
     .option( '-p, --path <path>', 'Path for solution folder.' )
     .option( '-s, --svn_url <url>', 'Url for svn (if exists)' )
@@ -52,6 +52,27 @@ program
         var compile = require( __dirname + '/js/compile.js' );
         compile.init( opt );
         compile.compile();
+    } );
+
+program
+    .command( 'snatch <url>' )
+    .description( 'snatch images form website.' )
+    .option( '-s, --save_path <path>', 'image saving path.' )
+    .option( '-d, --depth <depth>', 'searching depth.', parseInt )
+    .option( '-a, --attr <attr>', 'image attribute.' )
+    .option( '-l, --level <level>', 'domain level for searching.', parseInt )
+    .action( ( url, obj ) => {
+        var opt = {
+            url: url,
+            domain_level: obj.level,
+            save_path: obj.save_path,
+            depth: obj.depth,
+            img_attr: obj.attr,
+        }
+
+        var snatch = require( __dirname + '/js/snatch.js' )
+        snatch.init( opt );
+        snatch.snatch();
     } );
 
 program.parse( process.argv );
