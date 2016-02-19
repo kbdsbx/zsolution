@@ -2,6 +2,8 @@
 
 /* Global variables */
 
+var url_pattern = /^((http[s]?|ftp):\/)?\/?([^:\/\s]+)((\/\w+)*\/)([\w\-\.]+[^#?\s]+)(.*)?(#[\w\-]+)?$/ig;
+
 // path separator
 const separator = process.platform == "win32" ? '\\' : '/';
 
@@ -84,5 +86,9 @@ exports.each = function ( folder, callback ) {
         } );
 
     } );
+}
+
+exports.isurl = function ( path ) {
+    return url_pattern.test( path );
 }
 

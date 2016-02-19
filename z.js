@@ -61,6 +61,7 @@ program
     .option( '-d, --depth <depth>', 'searching depth.', parseInt )
     .option( '-a, --attr <attr>', 'image attribute.' )
     .option( '-l, --level <level>', 'domain level for searching.', parseInt )
+    .option( '-t, --assort <assort>', 'assort by search engine', /^(google|baidu)$/i )
     .action( ( url, obj ) => {
         var opt = {
             url: url,
@@ -68,11 +69,25 @@ program
             save_path: obj.save_path,
             depth: obj.depth,
             img_attr: obj.attr,
+            assort: obj.assort,
         }
 
         var snatch = require( __dirname + '/js/snatch.js' )
         snatch.init( opt );
         snatch.snatch();
+    } );
+
+program
+    .command( 'vision <path/url>' )
+    .description( 'vision image\'s information.' )
+    .action( ( path, obj ) => {
+        var opt = {
+            path: path,
+        }
+
+        var vision = require( __dirname + '/js/vision.js' );
+        vision.init( opt );
+        vision.vision();
     } );
 
 program.parse( process.argv );

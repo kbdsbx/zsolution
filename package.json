@@ -23,5 +23,8 @@
   },
   "bin": {
     "z": "./z.js"
+  },
+  "dependencies": {
+    "googleapis": "^2.1.7"
   }
 }

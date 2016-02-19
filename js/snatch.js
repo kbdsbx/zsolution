@@ -12,8 +12,12 @@ var options = {
     save_path: process.cwd(),
     depth: 3,
     img_attr: 'src',
+    assort: false,
     url_pattern: '<a.+?href=["|\'](https?://(:?[^\.]\.)?%s/.+?)["|\'] .+?>.+?</a>',
     img_pattern: '<img.+?(?:%s)=["|\'](.+?)["|\'].+?/?>',
+    
+    'baidu_search' : 'http://stu.baidu.com/n/searchpc?queryImageUrl=',
+    'baidu_pattern' : /\\x22text\\x22:\\x22(.+?)\\x22,/g,
 }
 
 exports.init = function( opt ) {
@@ -30,6 +34,39 @@ exports.init = function( opt ) {
     }
 }
 
+var assort_image = function( url, callback ) {
+    tools.get( options[ options.assort + '_search' ] + url, null, ( err, html ) => {
+        if ( err ) { callback( err ); return; }
+
+        if ( html ) {
+            var keyword_reg = new RegExp( options[ options.assort + '_pattern' ] );
+            var matched;
+            var keywords = [];
+            while ( ( matched = keyword_reg.exec( html ) ) != null ) {
+                keywords.push( JSON.parse( '"' + matched[1].replace( /\\\\/g, '\\' ) + '"' ) );
+            }
+
+            callback( null, keywords );
+        }
+    } );
+}
+
+var get_image = function( url, tpath, callback ) {
+    tools.get( url, 'binary', ( err, img_data ) => {
+        if ( err ) { callback( err ); return; }
+
+        if ( img_data ) {
+            // save image to temporary folder;
+            fs.writeFile( tpath, img_data, { encoding : 'binary', flag : 'w+' }, function( err ) {
+                if ( err ) { callback( err ); return; }
+
+                callback( null );
+                console.log( `${url} saved.` );
+            } );
+        }
+    } );
+}
+
 var exists_imgs = [];
 
 var save_images = function( html ) {
@@ -38,28 +75,62 @@ var save_images = function( html ) {
 
     while ( ( matched = img_reg.exec( html ) ) !== null ) {
         var img = matched[1];
-        var fmatch = img.match( /\/([^\/]+?\.[^\/]+?)$/i );
-        var fpath = null;
-        if ( fmatch ) {
-            fpath = options.save_path + '\\' + fmatch[1];
+        var fmatch = null,
+            fpath = null,
+            fname = null,
+            tpath = null;
+
+        if ( ( fmatch = img.match( /\/([^\/]+?\.[^\/]+?)$/i ) ) == null ) {
+            continue;
         }
 
-        if ( exists_imgs.indexOf( img ) == -1 && fpath ) {
+        fname = fmatch[1];
+        fpath = options.save_path + '\\' + fname;
+        tpath = process.env.temp + '\\' + fname;
+
+        if ( exists_imgs.indexOf( img ) == -1 ) {
             exists_imgs.push( img );
 
-            ( function( img, fpath ) {
-                tools.get( img, 'binary', ( err, img_data ) => {
-                    if ( err ) { console.log( err ); return; }
+            if ( options.assort ) {
+                ( function( img, fname, tpath ) {
+                    assort_image ( img, ( err, keywords ) => {
+                        if ( err ) { console.log( err ); }
 
-                    if ( img_data ) {
-                        fs.writeFile( fpath, img_data, { encoding : 'binary', flag : 'w+' }, function( err ) {
-                            if ( err ) { console.log( err ); return; }
+                        fpath = [];
+                        for ( var idx in keywords ) {
+                            if ( ! fs.existsSync( options.save_path + '\\' + keywords[idx] ) ) {
+                                fs.mkdirSync( options.save_path + '\\' + keywords[idx] );
+                            }
+                            fpath.push( options.save_path + '\\' + keywords[idx] + '\\' + fname );
+                        }
 
-                            console.log( `${img} saved.` );
-                        } );
-                    }
-                } );
-            } )( img, fpath );
+                        if ( ! fpath.length ) {
+                            if ( ! fs.existsSync( options.save_path + '\\unknow' ) ) {
+                                fs.mkdirSync( options.save_path + '\\unknow' );
+                            }
+                            fpath.push( options.save_path + '\\unknow\\' + fname );
+                        }
+
+                        ( function( img, tpath, fpath ) {
+                            get_image( img, tpath, ( err ) => {
+                                if ( err ) { console.log( err ); return; }
+
+                                for ( var idx in fpath ) {
+                                    fs.createReadStream( tpath ).pipe( fs.createWriteStream( fpath[idx] ) );
+                                }
+                            } );
+                        } )( img, tpath, fpath );
+                    } );
+                } ) ( img, fname, tpath );
+            } else {
+                ( function( img, tpath, fpath ) {
+                    get_image( img, tpath, ( err ) => {
+                        if ( err ) { console.log( err ); return; }
+
+                        fs.createReadStream( tpath ).pipe( fs.createWriteStream( fpath ) );
+                    } );
+                } )( img, tpath, fpath );
+            }
         }
     }
 }
