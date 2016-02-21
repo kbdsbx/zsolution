@@ -80,9 +80,11 @@ program
 program
     .command( 'vision <path/url>' )
     .description( 'vision image\'s information.' )
+    .option( '-c, --count <count>', 'count for image descriptions' )
     .action( ( path, obj ) => {
         var opt = {
             path: path,
+            count: obj.count,
         }
 
         var vision = require( __dirname + '/js/vision.js' );

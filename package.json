@@ -16,15 +16,17 @@
     "url": "https://github.com/kbdsbx/zsolution/issues"
   },
   "homepage": "https://github.com/kbdsbx/zsolution#readme",
-  "devDependencies": {
-    "commander": "^2.9.0",
-    "less-middleware": "^2.0.1",
-    "readline-sync": "^1.2.22"
-  },
   "bin": {
     "z": "./z.js"
   },
   "dependencies": {
-    "googleapis": "^2.1.7"
+    "googleapis": "^2.1.7",
+    "commander": "^2.9.0",
+    "less-middleware": "^2.0.1",
+    "readline-sync": "^1.2.22"
+  },
+  "scripts": {
+    "install": "node ./js/install.js",
+    "uninstall": "node ./js/uninstall.js"
   }
 }
