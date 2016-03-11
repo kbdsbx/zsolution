@@ -1,7 +1,6 @@
 "use strict"
 
 const fs = require( 'fs' );
-const rl = require( 'readline-sync' );
 const tools = require( __dirname + '/inc.js' );
 const data_file = __dirname + '/../data/data.json';
 
@@ -10,6 +9,7 @@ var data_solutions;
 var options = {
     name: '',
     out_path: '',
+    compress: false,
 }
 
 exports.init = function( opt ) {
@@ -30,39 +30,41 @@ exports.init = function( opt ) {
         process.exit( 0 );
     }
 
-    options.items = tools.load_by( data_solutions[options.name] );
+    options.item = tools.load_by( data_solutions[options.name] );
 
-    if ( ! options.out_path ) {
-        options.out_path = options.items.release_folder || process.cwd();
+    if ( options.out_path ) {
+        options.item.release_folder = options.out_path;
     }
 }
 
-exports.compile = function() {
-    tools.each( options.items.path, function( err, info ) {
-        if ( err ) { console.log( err ); }
+exports.release = function() {
+    tools.each( options.item.path, function( err, info ) {
+        if ( err ) { console.log( err ); return; }
 
         if ( info.isDirectory ) {
-            // stop to process release directory
+            // stop to process release folder
             switch( info.name ) {
                 case 'release':
                     return true;
             }
+
+            if ( /^\..+?$/i . test( info.name ) ) {
+                return true;
+            }
+        }
+
+        if ( info.isDirectory ) {
+            info.new_path = info.path.replace( options.item.path, options.item.release_folder );
+            require( __dirname + '/assert/directory.js' ).compile( info, options );
         }
 
         if ( info.isFile ) {
-            var new_path = info.path.replace( options.items.path, options.items.release_folder );
-
+            info.new_path = info.path.replace( options.item.path, options.item.release_folder );
             switch( info.ext ) {
                 case '.htm':
                 case '.html':
                 case '.shtml':
-                    fs.readFile( info.path, "utf8", ( err, contents ) => {
-                        // to process less;
-                        var less_pattern = /<link.+?href=['|"](.*?\.less[^\/]*?)['|"].*?>/g;
-                        var match;
-                        while( ( match = less_pattern.exec( contents ) ) !== null ) {
-                        }
-                    } );
+                    require( __dirname + '/assert/html.js' ).compile( info, options );
                     break;
 
                 case '.css':
@@ -72,6 +74,7 @@ exports.compile = function() {
                     break;
 
                 case '.js':
+                    require( __dirname + '/assert/js.js' ).compile( info, options );
                     break;
 
                 case '.json':
@@ -82,6 +85,7 @@ exports.compile = function() {
                 case '.png':
                 case '.gif':
                 case '.svg':
+                    require( __dirname + '/assert/image.js' ).compile( info, options );
                     break;
             }
         }

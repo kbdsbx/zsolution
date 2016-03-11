@@ -1,10 +1,11 @@
 {
   "name": "zsolution",
-  "version": "0.3.4",
+  "version": "1.0.0",
   "description": "tiny front-end solution",
   "main": "z.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "install": "node ./js/install.js",
+    "uninstall": "node ./js/uninstall.js"
   },
   "repository": {
     "type": "git",
@@ -20,13 +21,9 @@
     "z": "./z.js"
   },
   "dependencies": {
-    "googleapis": "^2.1.7",
     "commander": "^2.9.0",
-    "less-middleware": "^2.0.1",
+    "googleapis": "^2.1.7",
+    "less": "^2.6.0",
     "readline-sync": "^1.2.22"
-  },
-  "scripts": {
-    "install": "node ./js/install.js",
-    "uninstall": "node ./js/uninstall.js"
   }
 }

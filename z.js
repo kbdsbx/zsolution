@@ -40,18 +40,20 @@ program
     } );
 
 program
-    .command( 'compile [name]' )
-    .description( 'compile the solution.' )
-    .option( '-o, --out_path <path>', 'The folder path that will be output.' )
+    .command( 'release [name]' )
+    .description( 'release the solution.' )
+    .option( '-o, --out_path [path]', 'The folder path that will be output.' )
+    .option( '-c, --compress', 'Compress js, css or other compressable files.' )
     .action( ( name, obj ) => {
         var opt = {
             name : name,
-            out_path: obj.out_path,
+            out_path: obj.out_path === true ? process.cwd() : obj.out_path,
+            compress: obj.compress
         }
 
-        var compile = require( __dirname + '/js/compile.js' );
-        compile.init( opt );
-        compile.compile();
+        var release = require( __dirname + '/js/release.js' );
+        release.init( opt );
+        release.release();
     } );
 
 program
