@@ -2,8 +2,8 @@
 
 const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
-const tools = require( './inc.js' );
-const data_file = './data/data.json';
+const tools = require( __dirname + '/inc.js' );
+const data_file = __dirname + '/../data/data.json';
 
 var data_solutions;
 
@@ -40,24 +40,9 @@ exports.remove = function() {
 
     if ( options.remove_file ) {
         if ( _rm.release_folder.indexOf( _rm.path ) == -1 ) {
-            rmdir( _rm.release_folder );
+            tools.rmdir( _rm.release_folder );
         }
-        rmdir( _rm.path );
+        tools.rmdir( _rm.path );
     }
 }
 
-var rmdir = function( path ) {
-    var files = fs.readdirSync( path );
-
-    for ( var i = 0; i < files.length; i++ ) {
-        var f = path + '\\' + files[i];
-
-        if ( fs.statSync( f ).isDirectory() ) {
-            rmdir( f );
-        } else {
-            fs.unlinkSync( f );
-        }
-    }
-
-    fs.rmdirSync( path );
-}

@@ -10,6 +10,7 @@ const separator = process.platform == "win32" ? '\\' : '/';
 const fs = require( 'fs' );
 const http = require( 'http' );
 const path = require( 'path' );
+const crypto = require( 'crypto' );
 
 exports.load_by = function( path ) {
     try {
@@ -100,3 +101,33 @@ exports.isurl = function ( url ) {
     return url_pattern.test( url );
 }
 
+exports.xpath = function ( obj, folder ) {
+    let _path = folder.split( '\\' );
+    let _t = obj;
+
+    for ( let i = 0; i < folder.length; i++ ) {
+        _t = obj[ folder[i] ];
+    }
+
+    return _t;
+}
+
+exports.sha256 = function ( str ) {
+    return crypto.createHash( 'sha256' ).update( str ).digest( 'hex' );
+}
+
+exports.rmdir = function( path ) {
+    var files = fs.readdirSync( path );
+
+    for ( var i = 0; i < files.length; i++ ) {
+        var f = path + '\\' + files[i];
+
+        if ( fs.statSync( f ).isDirectory() ) {
+            exports.rmdir( f );
+        } else {
+            fs.unlinkSync( f );
+        }
+    }
+
+    fs.rmdirSync( path );
+}

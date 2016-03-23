@@ -68,6 +68,7 @@ exports.release = function() {
                     break;
 
                 case '.css':
+                    require( __dirname + '/assert/css.js' ).compile( info, options );
                     break;
 
                 case '.less':
@@ -86,6 +87,13 @@ exports.release = function() {
                 case '.gif':
                 case '.svg':
                     require( __dirname + '/assert/image.js' ).compile( info, options );
+                    break;
+
+                case '.eot':
+                case '.ttf':
+                case '.woff':
+                case '.woff2':
+                    require( __dirname + '/assert/font.js' ).compile( info, options );
                     break;
             }
         }
