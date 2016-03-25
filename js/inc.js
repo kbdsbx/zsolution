@@ -9,6 +9,7 @@ const separator = process.platform == "win32" ? '\\' : '/';
 
 const fs = require( 'fs' );
 const http = require( 'http' );
+const https = require( 'https' );
 const path = require( 'path' );
 const crypto = require( 'crypto' );
 
@@ -27,7 +28,8 @@ exports.save_as = function( src, data ) {
 }
 
 exports.get = function( url, encoding, callback ) {
-    http.get( url, ( res ) => {
+    let _http = /https:.+?/i.test( url ) ? https : http;
+    _http.get( url, ( res ) => {
         if ( res.statusCode == 200 ) {
             var data = '';
             if ( encoding ) {

@@ -8,12 +8,14 @@ const tools = require( __dirname + '/inc.js' );
 
 var options = {
     url: null,
+    url_parsed: null,
     domain_level: 3,
     save_path: process.cwd(),
     depth: 3,
     img_attr: 'src',
     assort: false,
-    url_pattern: '<a.+?href=["|\'](https?://(:?[^\.]\.)?%s/.+?)["|\'] .+?>.+?</a>',
+    url_pattern: '<a.+?href=["|\']((:?(:?(:?http|svg|svn|ftp):)?//)?(:?[\w|\.]+)?%s(:?:\d{1,5})?[^"\':]+?)["|\'].+?>.+?</a>',
+    // url_pattern: '<a.+?href=["|\'](https?://(:?[^\.]\.)?%s/.+?)["|\'] .+?>.+?</a>',
     img_pattern: '<img.+?(?:%s)=["|\'](.+?)["|\'].+?/?>',
     
     'baidu_search' : 'http://stu.baidu.com/n/searchpc?queryImageUrl=',
@@ -32,6 +34,8 @@ exports.init = function( opt ) {
         idx = options.url.host.lastIndexOf( '.', idx );
         options.url[ i + '-level-domain' ] = options.url.host.substring( idx + 1 );
     }
+
+    options.url[ '-1-level-domain' ] = '';
 }
 
 var assort_image = function( url, callback ) {
@@ -80,11 +84,12 @@ var save_images = function( html ) {
             fname = null,
             tpath = null;
 
-        if ( ( fmatch = img.match( /\/([^\/]+?\.[^\/]+?)$/i ) ) == null ) {
+        fmatch = url.parse( img );
+        
+        if ( fmatch.pathname === null )
             continue;
-        }
 
-        fname = fmatch[1];
+        fname = fmatch.pathname.substr( fmatch.pathname.lastIndexOf( '/' ) );
         fpath = options.save_path + '\\' + fname;
         tpath = process.env.temp + '\\' + fname;
 
@@ -152,14 +157,22 @@ var search_url = function( cur_url, depth ) {
 
             while ( ( matched = url_reg.exec( html ) ) !== null ) {
                 var sub_url = url.parse( matched[1] );
+
+                if ( ! sub_url.protocol || ! sub_url.host ) {
+                    sub_url.protocol = options.url.protocol;
+                    sub_url.host = options.url.host;
+                }
+
+                let _href = url.format( sub_url );
+
                 if ( exists_domains[ sub_url.pathname ] ) {
-                    if ( exists_urls.indexOf( sub_url.href ) == -1 ) {
-                        exists_urls.push( sub_url.href );
-                        search_url( sub_url.href, exists_domains[ sub_url.pathname ] );
+                    if ( exists_urls.indexOf( _href ) == -1 ) {
+                        exists_urls.push( _href );
+                        search_url( _href, exists_domains[ sub_url.pathname ] );
                     }
                 } else {
                     exists_domains[ sub_url.pathname ] = depth - 1;
-                    search_url( sub_url.href, depth - 1 );
+                    search_url( _href, depth - 1 );
                 }
             }
         }
