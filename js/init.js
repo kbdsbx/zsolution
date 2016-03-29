@@ -16,6 +16,7 @@ var options = {
     release_folder: '',
     sub_folder: {
         'release' : null,
+        'components' : null,
         'images' : null,
         'js' : {
             'coffee' : null,

@@ -46,6 +46,8 @@ exports.release = function() {
             switch( info.name ) {
                 case 'release':
                     return true;
+                case 'components':
+                    return true;
             }
 
             if ( /^\..+?$/i . test( info.name ) ) {
