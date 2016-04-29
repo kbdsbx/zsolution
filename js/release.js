@@ -1,6 +1,7 @@
 "use strict"
 
 const fs = require( 'fs' );
+const path = require( 'path' );
 const tools = require( __dirname + '/inc.js' );
 const data_file = __dirname + '/../data/data.json';
 
@@ -10,6 +11,7 @@ var options = {
     name: '',
     out_path: '',
     compress: false,
+    item: {},
 }
 
 exports.init = function( opt ) {
@@ -38,19 +40,20 @@ exports.init = function( opt ) {
 }
 
 exports.release = function() {
-    tools.each( options.item.path, function( err, info ) {
-        if ( err ) { console.log( err ); return; }
+    let res = each( options.item.path, options.item.sub_folder, function( info, old_hash ) {
+
+        if ( options.item.ignore && options.item.ignore instanceof Array ) {
+            // override ignore folders and files
+            for ( let idx in options.item.ignore ) {
+                if ( new RegExp( options.item.ignore[idx], 'i' ).test( info.name ) ) {
+                    return true;
+                }
+            }
+        }
 
         if ( info.isDirectory ) {
-            // stop to process release folder
-            switch( info.name ) {
-                case 'release':
-                    return true;
-                case 'components':
-                    return true;
-            }
-
-            if ( /^\..+?$/i . test( info.name ) ) {
+            // override release folder
+            if ( options.item.release_folder == info.path ) {
                 return true;
             }
         }
@@ -61,6 +64,10 @@ exports.release = function() {
         }
 
         if ( info.isFile ) {
+            switch( info.name + info.ext ) {
+                case 'solution.json':
+                    return true;
+            }
             info.new_path = info.path.replace( options.item.path, options.item.release_folder );
             switch( info.ext ) {
                 case '.htm':
@@ -77,6 +84,9 @@ exports.release = function() {
                     break;
 
                 case '.js':
+                    if ( old_hash !== null && info.hash == old_hash ) {
+                        return true;
+                    }
                     require( __dirname + '/assert/js.js' ).compile( info, options );
                     break;
 
@@ -88,6 +98,9 @@ exports.release = function() {
                 case '.png':
                 case '.gif':
                 case '.svg':
+                    if ( old_hash !== null && info.hash == old_hash ) {
+                        return true;
+                    }
                     require( __dirname + '/assert/image.js' ).compile( info, options );
                     break;
 
@@ -95,10 +108,47 @@ exports.release = function() {
                 case '.ttf':
                 case '.woff':
                 case '.woff2':
+                    if ( old_hash !== null && info.hash == old_hash ) {
+                        return true;
+                    }
                     require( __dirname + '/assert/font.js' ).compile( info, options );
                     break;
+                default :
+                    return true;
             }
         }
-    } )
+    } );
+
+    options.item.sub_folder = res;
+    tools.save_as( data_solutions[options.name], options.item );
+}
+
+var each = function( path, old_folder, callback ) {
+    let res = {};
+
+    tools.each( path, ( info ) => {
+        if ( info.isDirectory ) {
+            let _old = old_folder ? old_folder[ info.name ] : {};
+
+            if ( ! callback( info, null ) ) {
+                res[info.name] = each( info.path, _old, callback );
+            }
+            return true;
+        }
+
+        if ( info.isFile ) {
+            let _old = old_folder ? old_folder[ info.name + info.ext ] : null;
+
+            if ( _old ) {
+                res[info.name + info.ext] = _old;
+            }
+
+            if ( ! callback( info, _old ) ) {
+                res[info.name + info.ext] = info.hash;
+            }
+        }
+    } );
+
+    return res;
 }
 

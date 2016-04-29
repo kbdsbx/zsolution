@@ -31,6 +31,11 @@ var options = {
         'fonts' : null,
         'index.html' : '',
     },
+    ignore: [
+        'release',      // release folder
+        'components',   // html components folder
+        '^\\.',         // hidden folder
+    ]
 };
 
 exports.init = function( opt ) {
@@ -106,7 +111,7 @@ exports.init_paths = function() {
                 console.log( `[${_sub_path}] created successfully.` );
 
                 let f_info = tools.get_info( _sub_path );
-                res[ key ] = tools.sha256( f_info.name + f_info.changed_time.toString() );
+                res[ key ] = tools.sha256( f_info.name + f_info.ext + f_info.changed_time.toString() );
             }
         } );
 

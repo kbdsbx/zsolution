@@ -6,10 +6,10 @@ process.stdin.setEncoding( 'utf8' );
 
 program
     .command( 'init <name>' )
-    .description( 'init new solution.' )
-    .option( '-p, --path <path>', 'Path for solution folder.' )
-    .option( '-s, --svn_url <url>', 'Url for svn (if exists)' )
-    .option( '-v, --version <version>', 'Url for svn (if exists)' )
+    .description( 'initialize new solution.' )
+    .option( '-p, --path <path>', 'solution path' )
+    .option( '-s, --svn_url <url>', 'svn url (if exists)' )
+    .option( '-v, --version <version>', 'initialized version' )
     .action( ( name, obj ) => {
         var opt = {
             name : name,
@@ -27,7 +27,7 @@ program
 program
     .command( 'remove [name]' )
     .description( 'remove a solution.' )
-    .option( '-r, --remove_file', 'Remove all of files for solution.' )
+    .option( '-r, --remove_file', 'remove all of files in solution.' )
     .action( ( name, obj ) => {
         var opt = {
             name : name,
@@ -41,9 +41,9 @@ program
 
 program
     .command( 'release [name]' )
-    .description( 'release the solution.' )
-    .option( '-o, --out_path [path]', 'The folder path that will be output.' )
-    .option( '-c, --compress', 'Compress js, css or other compressable files.' )
+    .description( 'release solution.' )
+    .option( '-o, --out_path [path]', 'the folder path that will be output.' )
+    .option( '-c, --compress', 'compress js, css or other compressable files.' )
     .action( ( name, obj ) => {
         var opt = {
             name : name,
@@ -57,11 +57,26 @@ program
     } );
 
 program
+    .command( 'options [name] <option> <value>' )
+    .description( 'add or change options.' )
+    .action( ( name, option, value, obj ) => {
+        var opt = {
+            name : name,
+            option : option,
+            value : value
+        }
+
+        var options = require( __dirname + '/js/options.js' );
+        options.init( opt );
+        options.options();
+    } );
+
+program
     .command( 'snatch <url>' )
     .description( 'snatch images form website.' )
     .option( '-s, --save_path <path>', 'image saving path.' )
     .option( '-d, --depth <depth>', 'searching depth.', parseInt )
-    .option( '-a, --attr <attr>', 'image attribute.' )
+    .option( '-a, --attr <attr>', 'image attribute looks like [src].' )
     .option( '-l, --level <level>', 'domain level for searching.', parseInt )
     .option( '-t, --assort <assort>', 'assort by search engine', /^(google|baidu)$/i )
     .action( ( url, obj ) => {

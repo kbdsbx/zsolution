@@ -59,12 +59,22 @@ var less_compile = function( contents, dir ) {
         if ( less_match[1] ) {
             let less_file_path = path.isAbsolute( less_match[1] ) ? options.item.path + less_match[1].replace( /\//g, '\\' ) : dir + '\\' + less_match[1].replace( /\//g, '\\' );
             let less_info = tools.get_info( less_file_path );
-            let sha256 = crypto.createHash( 'sha256' ).update( less_info.changed_time.toString() ).digest( 'hex' ).substr( 32 );
+
+            if ( ! less_info ) {
+                continue;
+            }
+
+            let sha256 = less_info.hash;
+
+            let old_sha = tools.xpath( options.item.sub_folder, path.relative( options.item.path, less_file_path ) );
+
+                require( './less.js' ).compile( less_info, options );
+            if ( old_sha != sha256 || old_sha == '' ) {
+            }
+
             less_info.new_path = less_info.path
                 .replace( options.item.path, options.item.release_folder )
                 .replace( /\.less$/g, '.css' );
-
-            require( './less.js' ).compile( less_info, options );
 
             let less_link = less_match[0]
                 .replace( /\.less/g, '.css?guid=' + sha256 )
