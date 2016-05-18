@@ -69,7 +69,7 @@ var less_compile = function( contents, dir ) {
             let old_sha = tools.xpath( options.item.sub_folder, path.relative( options.item.path, less_file_path ) );
 
                 require( './less.js' ).compile( less_info, options );
-            if ( old_sha != sha256 || old_sha == '' ) {
+            if ( ( ! options.absolute ) && old_sha != sha256 || old_sha == '' ) {
             }
 
             less_info.new_path = less_info.path

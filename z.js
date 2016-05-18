@@ -44,11 +44,13 @@ program
     .description( 'release solution.' )
     .option( '-o, --out_path [path]', 'the folder path that will be output.' )
     .option( '-c, --compress', 'compress js, css or other compressable files.' )
+    .option( '-a, --absolute', 'compress absolutly and cover caches.' )
     .action( ( name, obj ) => {
         var opt = {
             name : name,
             out_path: obj.out_path === true ? process.cwd() : obj.out_path,
-            compress: obj.compress
+            compress: obj.compress,
+            absolute: obj.absolute || false,
         }
 
         var release = require( __dirname + '/js/release.js' );

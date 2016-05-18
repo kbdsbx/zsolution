@@ -84,13 +84,14 @@ exports.release = function() {
                     break;
 
                 case '.js':
-                    if ( old_hash !== null && info.hash == old_hash ) {
+                    if ( ( ! options.absolute ) && old_hash !== null && info.hash == old_hash ) {
                         return true;
                     }
                     require( __dirname + '/assert/js.js' ).compile( info, options );
                     break;
 
                 case '.json':
+                    require( __dirname + '/assert/json.js' ).compile( info, options );
                     break;
 
                 case '.jpg':
@@ -98,7 +99,7 @@ exports.release = function() {
                 case '.png':
                 case '.gif':
                 case '.svg':
-                    if ( old_hash !== null && info.hash == old_hash ) {
+                    if ( ( ! options.absolute ) && old_hash !== null && info.hash == old_hash ) {
                         return true;
                     }
                     require( __dirname + '/assert/image.js' ).compile( info, options );
@@ -108,7 +109,7 @@ exports.release = function() {
                 case '.ttf':
                 case '.woff':
                 case '.woff2':
-                    if ( old_hash !== null && info.hash == old_hash ) {
+                    if ( ( ! options.absolute ) && old_hash !== null && info.hash == old_hash ) {
                         return true;
                     }
                     require( __dirname + '/assert/font.js' ).compile( info, options );
