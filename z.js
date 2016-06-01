@@ -59,7 +59,7 @@ program
     } );
 
 program
-    .command( 'options [name] <option> <value>' )
+    .command( 'options [name] [option] [value]' )
     .description( 'add or change options.' )
     .action( ( name, option, value, obj ) => {
         var opt = {
@@ -109,6 +109,13 @@ program
         var vision = require( __dirname + '/js/vision.js' );
         vision.init( opt );
         vision.vision();
+    } );
+
+program
+    .command( 'install' )
+    .description( 're-install zsolution' )
+    .action( () => {
+        require( './js/install.js' );
     } );
 
 program.parse( process.argv );

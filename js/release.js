@@ -45,7 +45,7 @@ exports.release = function() {
         if ( options.item.ignore && options.item.ignore instanceof Array ) {
             // override ignore folders and files
             for ( let idx in options.item.ignore ) {
-                if ( new RegExp( options.item.ignore[idx], 'i' ).test( info.name ) ) {
+                if ( new RegExp( options.item.ignore[idx], 'i' ).test( info.name + info.ext ) ) {
                     return true;
                 }
             }

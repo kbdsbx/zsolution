@@ -1,6 +1,6 @@
 {
   "name": "zsolution",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "tiny front-end solution",
   "main": "z.js",
   "scripts": {
@@ -24,6 +24,7 @@
     "commander": "^2.9.0",
     "js-beautify": "^1.6.2",
     "less": "^2.6.0",
-    "readline-sync": "^1.2.22"
+    "readline-sync": "^1.2.22",
+    "uglify-js2": "^2.1.11"
   }
 }

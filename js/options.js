@@ -40,7 +40,13 @@ exports.options = function() {
                 options.item.ignore.push( options.value );
             }
             console.log( options.item.ignore );
-            console.log( 'Ignore added.' );
+
+            if ( options.value ) {
+                console.log( 'Ignore added.' );
+            }
+            break;
+        default :
+            console.log( options.item );
             break;
     }
 
