@@ -3,75 +3,59 @@
 const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
 const cr = require( 'crypto' );
+const cp = require( 'child_process' );
+const $ = require( __dirname + '/inc.js' );
 
-var operator = {
-    // folder path;
-    path: '',
-    // clean sub-folder;
-    deep: false,
-    // remove all of repeated files;
-    remove: false,
+exports = module.exports = dc;
+
+function dc( opt ) {
+    dc.options = $.extend( dc.options, opt );
 }
 
-var _clean_folder = function ( path ) {
-    var path_end = path.substr( -1, 1 );
-    fs.readdir( path, ( err, files ) => {
-        if ( err ) { throw err; }
+dc.__proto__ = {
+    options : {
+        // folder path
+        path: '',
+        // clean sub-folder
+        deep: false,
+        // remove all of repeated files
+        remove: false,
+    },
+
+    deep_cleaning : function() {
         var res = new Object();
-        files.forEach( ( f ) => {
-            f = path + ( path_end == '/' || path_end == '\\' ? f : '\\' + f );
+        $.each( dc.options.path, function( file ) {
+            var sha = $.sha256_file( file.path );
 
-            if ( operator.deep && fs.statSync( f ).isDirectory() ) {
-                _clean_folder( f, deep );
-                return;
-            }
+            console.log( `${file.path} computing...` );
+            if ( res[sha] ) {
+                console.log( `\n[${file.path}]\n samed as \n[${res[sha]}].` );
 
-            const input = fs.createReadStream( f );
-            const hash = cr.createHash( 'sha256' );
-            input.on( 'readable', () => {
-                var data = input.read();
-                if ( data ) {
-                    hash.update( data );
+                if ( dc.options.remove ) {
+                    fs.unlinkSync( file.path );
                 } else {
-                    var hex = hash.digest('hex');
-                    console.log( `${f} computing...` );
-                    if ( res[hex] ) {
-                        console.log( `The [${f}] same as [${res[hex]}].` );
-                        if ( operator.remove || '2' != rl.question( 'How to fix it? 1: Delete; 2: ignore; (1)' ) ) {
-                            fs.unlinkSync( f );
+                    var _selected;
+                    do {
+                        switch( _selected = rl.question( 'How to deal with? 1: ignore; 2: delete first; 3: delete last; 4: view both; (1)' ) ) {
+                        default:
+                            break;
+                        case '2':
+                            fs.unlinkSync( file.path );
+                            break;
+                        case '3':
+                            fs.unlinkSync( res[sha] );
+                            break;
+                        case '4':
+                            cp.exec( file.path );
+                            cp.exec( res[sha] );
+                            break;
                         }
-                    } else {
-                        res[hex] = f;
-                    }
+                    } while ( _selected == '4' );
                 }
-            } );
+            } else {
+                res[sha] = file.path;
+            }
         } );
-    } );
-}
+    },
+};
 
-exports.dc = function( argv ) {
-    if ( ! argv[1] ) {
-        operator.path = rl.question( 'Folder path: ' );
-    } else {
-        operator.path = argv[1];
-    }
-
-    for ( var i = 2; i < argv.length; i++ ) {
-        switch( argv[i] ) {
-            case '-d' :
-                operator.deep = true;
-                break;
-            case '-r' :
-                operator.remove = true;
-                break;
-        }
-    }
-
-    fs.exists( operator.path, ( exists ) => {
-        if ( exists ) {
-            _clean_folder( operator.path );
-        } else {
-            console.log( 'The folder is not exists.' );
-        }
-    } );
-}

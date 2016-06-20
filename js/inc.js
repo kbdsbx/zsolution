@@ -25,9 +25,7 @@ exports.load_by = function( path ) {
 
 // save json file
 exports.save_as = function( src, data ) {
-    fs.writeFile( src, JSON.stringify( data, null, '  ' ), ( err ) => {
-        if ( err ) { throw err; }
-    } );
+    fs.writeFileSync( src, JSON.stringify( data, null, '  ' ) );
 }
 
 // get web page with http[s]
@@ -123,6 +121,11 @@ exports.sha256 = function ( str ) {
     return crypto.createHash( 'sha256' ).update( str ).digest( 'hex' );
 }
 
+// encoding file with sha256
+exports.sha256_file = function( path ) {
+    return crypto.createHash( 'sha256' ).update( fs.readFileSync( path, 'binary' ) ).digest( 'hex' );
+}
+
 // remove directory cleanly
 exports.rmdir = function( path ) {
     var files = fs.readdirSync( path );
@@ -138,4 +141,22 @@ exports.rmdir = function( path ) {
     }
 
     fs.rmdirSync( path );
+}
+
+// extend
+exports.extend = function( obj_1, obj_2 ) {
+    var _res = {};
+    if ( obj_1 instanceof Object ) {
+        for ( var idx in obj_1 ) {
+            _res[idx] = obj_1[idx];
+        }
+    }
+
+    if ( obj_2 instanceof Object ) {
+        for ( var idx in obj_2 ) {
+            _res[idx] = obj_2[idx];
+        }
+    }
+
+    return _res;
 }

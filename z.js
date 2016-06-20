@@ -1,6 +1,7 @@
 "use strict"
 
 var program = require( 'commander' );
+var fs = require( 'fs' );
 
 process.stdin.setEncoding( 'utf8' );
 
@@ -8,20 +9,20 @@ program
     .command( 'init <name>' )
     .description( 'initialize new solution.' )
     .option( '-p, --path <path>', 'solution path' )
-    .option( '-s, --svn_url <url>', 'svn url (if exists)' )
+    .option( '-s, --svn <url>', 'svn url (if exists)' )
     .option( '-v, --version <version>', 'initialized version' )
     .action( ( name, obj ) => {
         var opt = {
             name : name,
-            path : obj.path || process.cwd(),
-            svn_url : obj.svn_url,
+            path : obj.path,
+            svn : obj.svn,
             version : obj.version || '0.0.0',
         };
 
         var init = require( __dirname + '/js/init.js' );
-        init.init( opt );
+        init( opt );
+        init.init_path();
         init.init_svn();
-        init.init_paths();
     } );
 
 program
@@ -113,9 +114,44 @@ program
 
 program
     .command( 'install' )
-    .description( 're-install zsolution' )
+    .description( 're-install zsolution.' )
     .action( () => {
-        require( './js/install.js' );
+        require( __dirname + '/js/install.js' );
+    } );
+
+program
+    .command( 'uninstall' )
+    .description( 'uninstall zsolution.' )
+    .action( () => {
+        require( __dirname + '/js/uninstall.js' );
+    } );
+
+program
+    .command( 'test [item]' )
+    .description( 'Testing zsolution.' )
+    .action( ( item ) => {
+        if ( fs.existsSync( './test/test.js' ) ) {
+            var utest = require( __dirname + '/test/test.js' );
+            utest( item );
+        }
+    } );
+
+program
+    .command( 'dc [path]' )
+    .description( 'Deep cleaning receipted files.' )
+    .option( '-d, --deep', 'deep in subfolder.' )
+    .option( '-r, --remove', 'remove all of repeated files absolutly.' )
+    .action( ( path, obj ) => {
+        var opt = {
+            path: path || process.cwd(),
+            deep: obj.deep || false,
+            remove: obj.remove || false,
+        }
+
+        var dc = require( __dirname + '/js/dc.js' )
+
+        dc( opt );
+        dc.deep_cleaning();
     } );
 
 program.parse( process.argv );

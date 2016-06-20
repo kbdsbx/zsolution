@@ -3,148 +3,148 @@
 const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
 const crypto = require( 'crypto' );
-const tools = require( __dirname + '/inc.js' );
-const data_file = __dirname + '/../data/data.json';
+const $ = require( __dirname + '/inc.js' );
 
 var data_solutions;
 
-var options = {
-    name: '',
-    varsion: '0.0.0',
-    path: '',
-    svn_url: '',
-    release_folder: '',
-    sub_folder: {
-        'release' : null,
-        'components' : null,
-        'images' : null,
-        'js' : {
-            'coffee' : null,
-        },
-        'css' : {
-            'less' : {
-                'style.less': '',
-            },
-            'sass' : null,
-        },
-        'lib' : null,
-        'fonts' : null,
-        'index.html' : '',
-    },
-    ignore: [
-        'release',      // release folder
-        'components',   // html components folder
-        '^\\.',         // hidden folder
-    ]
-};
+exports = module.exports = init;
 
-exports.init = function( opt ) {
-    // getting solution data
-    data_solutions = tools.load_by( data_file );
+function init( opt ) {
+    let _self = init;
+    _self.options = $.extend( init.options, opt );
 
-    for ( var attr in opt ) {
-        options[attr] = opt[attr];
+    _self.data_solutions = $.load_by( _self.data_file ) || {};
+
+    if ( ! _self.options.path ) {
+        _self.options.path = process.cwd();
     }
 
-    if ( ! options.name ) {
-        options.name = rl.question( 'Solution name: ' );
-    }
+    let _json_file = _self.options.path + '/solution.json';
 
-    if ( data_solutions[options.name] ) {
-        switch ( rl.question( 'This solution is existed. 1: cover; 2: update; 3: exit; (1)' ) ) {
-            default:
-            case '1':
-                let topt = tools.load_by( data_solutions[options.name] );
-                tools.rmdir( topt.path );
-                break;
-            case '2':
-                // options = tools.load_by( data_solutions[options.name] );
-                return;
-            case '3':
-                process.exit(0);
-                return;
+    if ( fs.existsSync( _json_file ) ) {
+        try {
+            _self.options = $.extend( _self.options, $.load_by( _json_file ) );
+            _self.data_solutions[ _self.options.name ] = _json_file;
+            $.save_as( _self.data_file, _self.data_solutions )
+        } catch ( e ) {
         }
+    } else {
+        if ( ! _self.options.name ) {
+            _self.options.name = rl.question( 'Solution name: ' );
+        }
+
+        if ( _self.data_solutions[ _self.options.name ] ) {
+            switch ( rl.question( 'This solution is existed. 1: ignore; 2: cover; 3: exit. (1)' ) ) {
+                default:
+                case '1':
+                    break;
+                case '2':
+                    $.rmdir( _self.options.path );
+                    break;
+                case '3':
+                    process.exit( 0 );
+                    break;
+            }
+        }
+
+        if ( ! _self.options.svn ) {
+            _self.options.svn = rl.question( 'SVN URL (if exists): ' );
+        }
+
+        _self.data_solutions[ _self.options.name ] = _json_file;
+        $.save_as( _self.data_file, _self.data_solutions );
     }
-
-    if ( ! options.path ) {
-        options.path = rl.question( 'Solution path: ' );
-    }
-
-    if ( ! options.svn_url ) {
-        options.svn_url = rl.question( 'SVN URL (if exists): ' );
-    }
-
-    options.path = options.path + ( options.path.substr( -1, 1 ) == '/' || options.path.substr( -1, 1 ) == '\\' ? options.name : '\\' + options.name );
-    options.release_folder = options.path + '\\release';
-
-    if ( ! fs.existsSync( options.path ) ) {
-        fs.mkdirSync( options.path );
-        console.log( `created solution folder [${options.path}] successfully.` );
-    }
-
-    var cur_solution = options.path + '\\solution.json';
-    data_solutions[options.name] = cur_solution;
-
-    tools.save_as( data_file, data_solutions );
-    tools.save_as( cur_solution, options );
 }
 
-exports.init_paths = function() {
-    var _mk_folder = function( path, folders ) {
-        let res = {};
-        Object.keys( folders ).forEach( ( key ) => {
-            let _sub_path = path + '\\' + key;
+init.__proto__ = {
+    data_file : __dirname + '/../data/data.json',
+    data_solutions : '',
+    options : {
+        name: '',
+        version: 0,
+        path: '',
+        svn: '',
+        sub_folder: {
+            'release' : null,
+            'components' : null,
+            'images' : null,
+            'lib' : null,
+            'fonts' : null,
+            'js' : {
+                'coffee': null,
+            },
+            'css' : {
+                'less' : {
+                    'style.less' : '',
+                },
+            },
+            'index.html' : '',
+        },
+        ignore: [
+            'release',      // release folder
+            'components',   // html components folder
+            '^\\.',         // hidden folders and files
+        ],
+    },
 
-            if ( folders[key] === null || folders[key] instanceof Object ) {
-                // folder
-                fs.mkdirSync( _sub_path );
-                console.log( `[${_sub_path}] created successfully.` );
+    init_path : function() {
+        var _mk_folder = function( path, folders ) {
+            let res = {};
+            Object.keys( folders ).forEach( ( key ) => {
+                let _sub_path = path + '\\' + key;
 
-                if ( folders[key] !== null ) {
-                    res[ key ] = _mk_folder( _sub_path, folders[key] );
-                } else {
-                    res[ key ] = null;
+                if ( fs.existsSync( _sub_path ) ) {
+                    return;
                 }
-            } else if ( folders[key] === '' || folders[key] instanceof String ) {
-                // file
-                fs.writeFileSync( _sub_path, '' );
-                console.log( `[${_sub_path}] created successfully.` );
 
-                let f_info = tools.get_info( _sub_path );
-                res[ key ] = tools.sha256( f_info.name + f_info.ext + f_info.changed_time.toString() );
-            }
-        } );
+                if ( folders[key] === null || folders[key] instanceof Object ) {
+                    // folder
+                    fs.mkdirSync( _sub_path );
+                    console.log( `[${_sub_path}] created successfully.` );
 
-        return res;
-    }
+                    if ( folders[key] !== null ) {
+                        res[ key ] = _mk_folder( _sub_path, folders[key] );
+                    } else {
+                        res[ key ] = null;
+                    }
+                } else if ( folders[key] === '' || folders[key] instanceof String ) {
+                    // file
+                    fs.writeFileSync( _sub_path, '' );
+                    console.log( `[${_sub_path}] created successfully.` );
 
-    fs.exists( options.path, ( exists ) => {
+                    let f_info = $.get_info( _sub_path );
+                    res[ key ] = $.sha256( f_info.name + f_info.ext + f_info.changed_time.toString() );
+                }
+            } );
+
+            return res;
+        }
+
         let res;
 
-        if ( exists ) {
-            res = _mk_folder( options.path, options.sub_folder );
+        if ( fs.existsSync( init.options.path ) ) {
+            res = _mk_folder( init.options.path, init.options.sub_folder );
         } else {
-            fs.mkdirSync( options.path );
-            console.log( `[${options.path}] created successfully.` );
-            res = _mk_folder( options.path, options.sub_folder );
+            fs.mkdirSync( init.options.path );
+            console.log( `[${init.options.path}] created successfully.` );
+            res = _mk_folder( init.options.path, init.options.sub_folder );
         }
 
-        var cur_solution = options.path + '\\solution.json';
-        options.sub_folder = res;
-        tools.save_as( cur_solution, options );
+        var _json_file = init.options.path + '\\solution.json';
+        init.options.sub_folder = res;
+        $.save_as( _json_file, init.options );
+    },
 
-        return false;
-    } );
-}
+    init_svn : function() {
+        if ( ! init.options.svn ) {
+            return;
+        }
 
-exports.init_svn = function() {
-    if ( ! options.svn_url ) {
-        return;
+        // todo: svn url verify;
+
+        console.log( 'requesting form svn...' );
+        var val = require( 'child_process' ).execSync( `svn checkout ${init.options.svn} ${init.options.path}`, { encoding : 'utf-8' } );
+        console.log( val );
     }
-
-    // todo: svn url verify;
-
-    console.log( 'requesting form svn...' );
-    var val = require( 'child_process' ).execSync( `svn checkout ${options.svn_url} ${options.release_folder}`, { encoding : 'utf-8' } );
-    console.log( val );
 }
+

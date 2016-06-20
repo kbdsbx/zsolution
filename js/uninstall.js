@@ -1,7 +1,10 @@
 "use strict"
 
+const cp = require( 'child_process' );
+const fs = require( 'fs' );
+
 var uninstall = function() {
-    cp.execSync( `npm unlink` );
+    cp.execSync( `npm unlink zsolution` );
 
     if ( process.platform == "win32" ) {
         var rmfiles = [

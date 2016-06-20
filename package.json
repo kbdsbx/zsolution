@@ -1,6 +1,6 @@
 {
   "name": "zsolution",
-  "version": "1.2.1",
+  "version": "1.2.3",
   "description": "tiny front-end solution",
   "main": "z.js",
   "scripts": {
