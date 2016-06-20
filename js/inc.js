@@ -127,20 +127,24 @@ exports.sha256_file = function( path ) {
 }
 
 // remove directory cleanly
-exports.rmdir = function( path ) {
+exports.rmdir = function( path, deep ) {
+    deep = deep || 0;
     var files = fs.readdirSync( path );
 
     for ( var i = 0; i < files.length; i++ ) {
         var f = path + '\\' + files[i];
 
         if ( fs.statSync( f ).isDirectory() ) {
-            exports.rmdir( f );
+            exports.rmdir( f, deep + 1 );
         } else {
             fs.unlinkSync( f );
         }
     }
 
-    fs.rmdirSync( path );
+    // can't be remove original path
+    if ( deep ) {
+        fs.rmdirSync( path );
+    }
 }
 
 // extend

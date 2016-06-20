@@ -73,7 +73,7 @@ var less_compile = function( contents, dir ) {
             }
 
             less_info.new_path = less_info.path
-                .replace( options.item.path, options.item.release_folder )
+                .replace( options.item.path, options.item.release_path )
                 .replace( /\.less$/g, '.css' );
 
             let less_link = less_match[0]

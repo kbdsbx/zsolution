@@ -36,8 +36,7 @@ program
         }
 
         var remove = require( __dirname + '/js/remove.js' );
-        remove.init( opt );
-        remove.remove();
+        remove( opt );
     } );
 
 program

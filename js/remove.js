@@ -2,47 +2,46 @@
 
 const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
-const tools = require( __dirname + '/inc.js' );
+const $ = require( __dirname + '/inc.js' );
 const data_file = __dirname + '/../data/data.json';
 
 var data_solutions;
 
-var options = {
-    name: '',
-    remove_file: false,
-}
+exports = module.exports = remove;
 
-exports.init = function( opt ) {
-    // getting solution data
-    data_solutions = tools.load_by( data_file );
+function remove( opt ) {
+    let _self = remove;
 
-    for ( var attr in opt ) {
-        options[attr] = opt[attr];
-    }
-}
+    _self.options = $.extend( remove.options, opt );
+    _self.data_solutions = $.load_by( _self.data_file ) || {};
 
-exports.remove = function() {
+    let _json_file = _self.data_solutions[_self.options.name];
 
-    if ( ! options.name ) {
-        options.name = rl.question( 'Solution name: ' );
-    }
-
-    if ( ! data_solutions[options.name] ) {
+    if ( ! _json_file ) {
         console.error( 'This solution is not exists.' );
-        process.exit( 0 );
+        return;
     }
 
-    var _solution_path = data_solutions[options.name];
-    var _rm = JSON.parse( fs.readFileSync( _solution_path, 'utf8' ) );
-    data_solutions[options.name] = undefined;
+    let _json = $.load_by( _json_file );
 
-    tools.save_as( data_file, data_solutions );
-
-    if ( options.remove_file ) {
-        if ( _rm.release_folder.indexOf( _rm.path ) == -1 ) {
-            tools.rmdir( _rm.release_folder );
+    if ( remove.options.remove_file ) {
+        if ( _json.release_path.indexOf( _json.path ) == -1 ) {
+            $.rmdir( _json.release_path );
         }
-        tools.rmdir( _rm.path );
+
+        $.rmdir( _json.path );
     }
+
+    delete _self.data_solutions[_self.options.name];
+    $.save_as( _self.data_file, _self.data_solutions );
 }
+
+remove.__proto__ = {
+    data_file : __dirname + '/../data/data.json',
+    data_solutions : null,
+    options : {
+        name: '',
+        remove_file: false,
+    }
+};
 

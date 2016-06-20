@@ -35,7 +35,7 @@ exports.init = function( opt ) {
     options.item = tools.load_by( data_solutions[options.name] );
 
     if ( options.out_path ) {
-        options.item.release_folder = options.out_path;
+        options.item.release_path = options.out_path;
     }
 }
 
@@ -53,13 +53,13 @@ exports.release = function() {
 
         if ( info.isDirectory ) {
             // override release folder
-            if ( options.item.release_folder == info.path ) {
+            if ( options.item.release_path == info.path ) {
                 return true;
             }
         }
 
         if ( info.isDirectory ) {
-            info.new_path = info.path.replace( options.item.path, options.item.release_folder );
+            info.new_path = info.path.replace( options.item.path, options.item.release_path );
             require( __dirname + '/assert/directory.js' ).compile( info, options );
         }
 
@@ -68,7 +68,7 @@ exports.release = function() {
                 case 'solution.json':
                     return true;
             }
-            info.new_path = info.path.replace( options.item.path, options.item.release_folder );
+            info.new_path = info.path.replace( options.item.path, options.item.release_path );
             switch( info.ext ) {
                 case '.htm':
                 case '.html':

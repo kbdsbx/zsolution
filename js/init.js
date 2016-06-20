@@ -47,6 +47,10 @@ function init( opt ) {
             }
         }
 
+        if ( ! _self.options.release_path ) {
+            _self.options.release_path = _self.options.path + '/release';
+        }
+
         if ( ! _self.options.svn ) {
             _self.options.svn = rl.question( 'SVN URL (if exists): ' );
         }
@@ -64,6 +68,7 @@ init.__proto__ = {
         version: 0,
         path: '',
         svn: '',
+        release_path: '',
         sub_folder: {
             'release' : null,
             'components' : null,
