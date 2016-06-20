@@ -40,22 +40,22 @@ program
     } );
 
 program
-    .command( 'release [name]' )
-    .description( 'release solution.' )
-    .option( '-o, --out_path [path]', 'the folder path that will be output.' )
+    .command( 'compile [name]' )
+    .description( 'compile solution.' )
+    .option( '-o, --output_path [path]', 'the folder path that will be output.' )
     .option( '-c, --compress', 'compress js, css or other compressable files.' )
     .option( '-a, --absolute', 'compress absolutly and cover caches.' )
     .action( ( name, obj ) => {
         var opt = {
             name : name,
-            out_path: obj.out_path === true ? process.cwd() : obj.out_path,
-            compress: obj.compress,
+            output_path: obj.output_path || null,
+            compress: obj.compress || false,
             absolute: obj.absolute || false,
         }
 
-        var release = require( __dirname + '/js/release.js' );
-        release.init( opt );
-        release.release();
+        var compile = require( __dirname + '/js/compile.js' );
+        compile( opt );
+        compile.compile();
     } );
 
 program

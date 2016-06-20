@@ -50,15 +50,15 @@ $ z remove [options] [name]
 
 ### Release
 ```
-$ z release [options] <name>
+$ z compile [options] <name>
 
-  release solution.
+  compile solution.
 
   Options:
 
-    -h, --help             output usage information
-    -o, --out_path [path]  the folder path that will be output.
-    -c, --compress         compress js, css or other compressable files.
+    -h, --help                  output usage information
+    -o, --output_path [path]    the folder path that will be output.
+    -c, --compress              compress js, css or other compressable files.
 ```
 
 ### Options

@@ -3,9 +3,8 @@
 const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
 const crypto = require( 'crypto' );
+const path = require( 'path' );
 const $ = require( __dirname + '/inc.js' );
-
-var data_solutions;
 
 exports = module.exports = init;
 
@@ -19,7 +18,7 @@ function init( opt ) {
         _self.options.path = process.cwd();
     }
 
-    let _json_file = _self.options.path + '/solution.json';
+    let _json_file = path.normalize( _self.options.path + '/solution.json' );
 
     if ( fs.existsSync( _json_file ) ) {
         try {
@@ -47,8 +46,8 @@ function init( opt ) {
             }
         }
 
-        if ( ! _self.options.release_path ) {
-            _self.options.release_path = _self.options.path + '/release';
+        if ( ! _self.options.output_path ) {
+            _self.options.output_path = path.normalize( _self.options.path + '/release' );
         }
 
         if ( ! _self.options.svn ) {
@@ -61,14 +60,14 @@ function init( opt ) {
 }
 
 init.__proto__ = {
-    data_file : __dirname + '/../data/data.json',
+    data_file : path.normalize( __dirname + '/../data/data.json' ),
     data_solutions : '',
     options : {
         name: '',
         version: 0,
         path: '',
         svn: '',
-        release_path: '',
+        output_path: '',
         sub_folder: {
             'release' : null,
             'components' : null,
@@ -93,10 +92,10 @@ init.__proto__ = {
     },
 
     init_path : function() {
-        var _mk_folder = function( path, folders ) {
+        var _mk_folder = function( parent_path, folders ) {
             let res = {};
             Object.keys( folders ).forEach( ( key ) => {
-                let _sub_path = path + '\\' + key;
+                let _sub_path = path.normalize( parent_path + '/' + key );
 
                 if ( fs.existsSync( _sub_path ) ) {
                     return;
@@ -118,7 +117,7 @@ init.__proto__ = {
                     console.log( `[${_sub_path}] created successfully.` );
 
                     let f_info = $.get_info( _sub_path );
-                    res[ key ] = $.sha256( f_info.name + f_info.ext + f_info.changed_time.toString() );
+                    res[ key ] = f_info.hash;
                 }
             } );
 
@@ -135,7 +134,7 @@ init.__proto__ = {
             res = _mk_folder( init.options.path, init.options.sub_folder );
         }
 
-        var _json_file = init.options.path + '\\solution.json';
+        var _json_file = path.normalize( init.options.path + '/solution.json' );
         init.options.sub_folder = res;
         $.save_as( _json_file, init.options );
     },

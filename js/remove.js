@@ -2,10 +2,8 @@
 
 const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
+const path = require( 'path' );
 const $ = require( __dirname + '/inc.js' );
-const data_file = __dirname + '/../data/data.json';
-
-var data_solutions;
 
 exports = module.exports = remove;
 
@@ -25,8 +23,8 @@ function remove( opt ) {
     let _json = $.load_by( _json_file );
 
     if ( remove.options.remove_file ) {
-        if ( _json.release_path.indexOf( _json.path ) == -1 ) {
-            $.rmdir( _json.release_path );
+        if ( _json.output_path.indexOf( _json.path ) == -1 ) {
+            $.rmdir( _json.output_path );
         }
 
         $.rmdir( _json.path );
@@ -37,7 +35,7 @@ function remove( opt ) {
 }
 
 remove.__proto__ = {
-    data_file : __dirname + '/../data/data.json',
+    data_file : path.normalize( __dirname + '/../data/data.json' ),
     data_solutions : null,
     options : {
         name: '',
