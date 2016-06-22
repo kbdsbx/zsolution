@@ -105,15 +105,57 @@ exports.isurl = function ( url ) {
     return url_pattern.test( url );
 }
 
-exports.xpath = function ( obj, folder ) {
-    let _path = folder.split( '\\' );
-    let _t = obj;
+exports.xpath = function ( obj, folder, val ) {
 
-    for ( let i = 0; i < _path.length; i++ ) {
-        _t = _t[ _path[i] ];
+    let _k = folder.slice( 0, folder.indexOf( '\\' ) );
+
+    if ( _k && obj ) {
+        return exports.xpath( obj[_k], folder.slice( folder.indexOf( '\\' ) + 1 ), val );
     }
 
-    return _t;
+    if ( ! _k ) {
+        if ( ! val ) {
+            return obj;
+        } else {
+            obj = val;
+        }
+    }
+
+    if ( ! obj ) {
+        if ( ! val ) {
+            return null;
+        } else {
+            obj = {};
+        }
+    }
+
+    /*
+    if ( ! val ) {
+        let _path = folder.split( '\\' );
+        let _t = obj;
+
+        for ( let i = 0; i < _path.length; i++ ) {
+            if ( ! _t )
+                return null;
+
+            _t = _t[ _path[i] ];
+        }
+
+        return _t;
+    } else {
+        let _path = folder.split( '\\' );
+        let _t = obj;
+
+        for ( let i = 0; i < _path.length; i++ ) {
+            if ( ! _t )
+                _t = {};
+
+            _t = _t[ _path[i] ];
+        }
+
+        _t = val;
+    }
+    */
 }
 
 // encoding str with sha256

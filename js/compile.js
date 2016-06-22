@@ -74,6 +74,7 @@ compile.__proto__ = {
     },
 
     compile : function() {
+
         let res = compile._each( compile.solution.path, compile.solution.sub_folder, function( info, old_hash ) {
             if ( compile.solution.ignore && compile.solution.ignore instanceof Array ) {
                 for ( let idx in compile.solution.ignore ) {

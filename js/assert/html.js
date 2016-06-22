@@ -30,18 +30,19 @@ var solution = {};
 exports.compile = function( info, opt, sol ) {
     options = opt;
     solution = sol;
+
     fs.readFile( info.path, "utf8", ( err, contents ) => {
         if ( err ) { console.log( err ); return; }
 
         let result = contents;
 
-        result = css_move( result, info.dir );
+        result = css_move( result, info.dir, solution );
 
-        result = js_move( result, info.dir );
+        result = js_move( result, info.dir, solution );
 
-        result = less_compile( result, info.dir );
+        result = less_compile( result, info.dir, solution );
 
-        result = import_compile( result, info.dir );
+        result = import_compile( result, info.dir, solution );
 
         fs.writeFile( info.new_path, beautify_html( result ), { flag: 'w+' }, ( err ) => {
             if ( err ) { console.log( err ); return; }
@@ -54,7 +55,7 @@ exports.compile = function( info, opt, sol ) {
 /**
  * less
  */
-var less_compile = function( contents, dir ) {
+var less_compile = function( contents, dir, solution ) {
     let result = contents;
 
     var less_pattern = /<link.+?href=['|"](.*?\.less\??[^\/^\?]*?)['|"].*?>/g;
@@ -72,10 +73,10 @@ var less_compile = function( contents, dir ) {
 
             let sha256 = less_info.hash;
 
-            let old_sha = tools.xpath( solution.sub_folder, path.relative( solution.path, less_file_path ) );
+            let old_sha = tools.xpath( solution.new_folder, path.relative( solution.path, less_file_path ) );
 
+            if ( ( ! options.absolute ) && old_sha != sha256 || old_sha === null ) {
                 require( './less.js' ).compile( less_info, options );
-            if ( ( ! options.absolute ) && old_sha != sha256 || old_sha == '' ) {
             }
 
             less_info.new_path = less_info.path
@@ -98,7 +99,7 @@ var less_compile = function( contents, dir ) {
 /**
  * link[rel="import"]
  */
-var import_compile = function( contents, dir ) {
+var import_compile = function( contents, dir, solution ) {
     let result = contents;
 
     var import_pattern = /<link.+?rel=['|"]import['|"].*?>/g;
@@ -132,7 +133,7 @@ var import_compile = function( contents, dir ) {
 /**
  * js file
  */
-var js_move = function( contents, dir ) {
+var js_move = function( contents, dir, solution ) {
     let result = contents;
 
     let js_pattern = /<script.+?src=['|"](.+?)['|"][^>]*?>.*?<\/script>/g;
@@ -167,7 +168,7 @@ var js_move = function( contents, dir ) {
 /**
  * css file
  */
-var css_move = function( contents, dir ) {
+var css_move = function( contents, dir, solution ) {
     let result = contents;
 
     let css_pattern = /<link.+?href=['|"](.*?\.css\??[^\/^\?]*?)['|"].*?>/g;

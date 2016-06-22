@@ -30,7 +30,7 @@ $ z init [options] <name>
 
     -h, --help               output usage information
     -p, --path <path>        solution path
-    -s, --svn_url <url>      svn url (if exists)
+    -s, --svn <url>          svn url (if exists)
     -v, --version <version>  initialized version
 ```
 
@@ -48,7 +48,7 @@ $ z remove [options] [name]
     -r, --remove_file  remove all of files in solution.
 ```
 
-### Release
+### Compile
 ```
 $ z compile [options] <name>
 
