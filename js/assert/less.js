@@ -23,6 +23,7 @@ exports.compile = function( info, options ) {
             paths: [ info.dir ],
             filename: info.path,
             compress: options.compress,
+            sourceMap: {},
         }, ( err, output ) => {
             if ( err ) { console.error( err ); return; }
 
@@ -30,6 +31,12 @@ exports.compile = function( info, options ) {
                 if ( err ) { console.error( err ); return; }
 
                 console.log( info.new_path + ' compiled.' );
+            } );
+
+            fs.writeFile( info.new_path + '.map', output.map, { flag: 'w+' }, ( err ) => {
+                if ( err ) { console.error( err ); return; }
+
+                console.log( info.new_path + '.map writed.' );
             } );
         } );
     } );

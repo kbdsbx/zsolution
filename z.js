@@ -129,10 +129,11 @@ program
     .command( 'test [item]' )
     .description( 'Testing zsolution.' )
     .action( ( item ) => {
-        if ( fs.existsSync( './test/test.js' ) ) {
-            var utest = require( __dirname + '/test/test.js' );
-            utest( item );
-        }
+        var opt = {
+            name : item,
+        };
+        var utest = require( __dirname + '/js/test.js' );
+        utest( opt );
     } );
 
 program
