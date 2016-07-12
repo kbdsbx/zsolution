@@ -201,6 +201,11 @@ html_analyze.__proto__ = {
         return this._dom_start( stm );
     },
 
+    // void elememts list, from [https://www.w3.org/TR/html/syntax.html#void-elements]
+    _void_elements : [ 'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'menuitem', 'meta', 'param', 'source', 'track', 'wbr' ],
+    // raw text elememts and escapable raw text elements list, from [https://www.w3.org/TR/html/syntax.html#raw-text]
+    _raw_text_elements : [ 'script', 'style', 'textarea', 'title', 'pre' ],
+
     /**
      * stm : readstream
      * regs : array or string
@@ -232,6 +237,10 @@ html_analyze.__proto__ = {
             _chunk += _data;
         }
 
+        if ( _chunk ) {
+            return { chunk : _chunk, reg : null, data : null };
+        }
+
         return null;
     },
 
@@ -260,11 +269,12 @@ html_analyze.__proto__ = {
                 if ( _n == '/' ) {
                     if ( _node ) {
                         _n = this._do_while( stm, ">" );
-                        if ( _node.tagName == _n.chunk ) {
+                        if ( _node.tagName == _n.chunk.trim() ) {
                             // end tag in current elemenet
                             _node = null;
                             continue;
                         } else {
+                    console.log( _node.nodeName );
                             // error end of tags.
                             throw "error end of tags";
                         }
@@ -277,8 +287,12 @@ html_analyze.__proto__ = {
                     stm.unshift( _n );
                 }
                 _node = new node();
-                this._tag_start( stm, _node );
-                _nodes.push( _node );
+                if ( null == this._tag_start( stm, _node ) ) {
+                    _nodes.push( _node );
+                    _node = null;
+                } else {
+                    _nodes.push( _node );
+                }
             } else if ( next.reg == "[^\\s<]" ) {
                 if ( next.data.trim().length > 0 ) {
                     stm.unshift( next.data );
@@ -297,9 +311,9 @@ html_analyze.__proto__ = {
     _tag_start : function( stm, _node ) {
         var next = null;
 
-        while ( next = this._do_while( stm, "!", "\\?", " ", ">", "\\/" ) ) {
+        while ( next = this._do_while( stm, "!", "\\?", "\\s", ">", "\\/" ) ) {
             switch ( next.reg ) {
-            case " ":
+            case "\\s":
             case ">":
             case "\\/":
                 // tag name
@@ -314,7 +328,7 @@ html_analyze.__proto__ = {
                             element.call( _node, _pn[0], _pn[1] );
                         }
 
-                        if ( next.reg == " " ) {
+                        if ( next.reg == "\\s" ) {
                             _node.attributes = this._attribute_start( stm, _node );
                         } else {
                             _node.attributes = [];
@@ -324,15 +338,15 @@ html_analyze.__proto__ = {
 
                 // tag end
                 if ( next.reg == '>' && _node.nodeName ) {
-                    // html only
-                    // void elememts list, from [https://www.w3.org/TR/html/syntax.html#void-elements]
-                    var _end_tag_forbidden = [ 'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'menuitem', 'meta', 'param', 'source', 'track', 'wbr' ];
-                    if ( _end_tag_forbidden.indexOf( _node.tagName ) != -1 ) {
+                    if ( this._void_elements.indexOf( _node.nodeName ) != -1 ) {
+                        return;
+                    } else if ( this._raw_text_elements.indexOf( _node.tagName ) != -1 ) {
+                        _node.nodeValue = this._text_value_start( stm, node );
                     } else {
                         // recursive into child node
                         _node.childNodes = this._node_start( stm );
                     }
-                    return;
+                    return _node;
                 }
                 // end tag
                 if ( next.reg == '\\/' && _node.nodeName ) {
@@ -361,7 +375,7 @@ html_analyze.__proto__ = {
 
                 // dtds
                 _n = stm.read( 8 );
-                if ( _n && _n.toUpperCase() == 'DOCTYPE ' ) {
+                if ( _n && /^DOCTYPE\s$/i.test( _n.toUpperCase() ) ) {
                     doctype.call( _node, 'DOCTYPE' );
                     this._doctype_start( stm, _node );
                     return;
@@ -375,7 +389,7 @@ html_analyze.__proto__ = {
                
                 // xml head
                 _n = stm.read( 4 );
-                if ( _n && _n.toLowerCase() == 'xml ' ) {
+                if ( _n && /^xml\s$/i.test( _n.toLowerCase() ) ) {
                     xml.call( _node );
                     _node.attributes = this._attribute_start( stm, _node );
                 } else {
@@ -392,172 +406,32 @@ html_analyze.__proto__ = {
                 break;
             }
         }
-
-        /*
-        while ( next = this._do_while( stm, "<", "!", "\\?", " ", ">", "\\/" ) ) {
-            switch( next.reg ) {
-            case "<":
-                var _next;
-                _next = stm.read( 1 );
-                if ( _next == '/' ) {
-                    if ( _node !== null ) {
-                        _next = this._do_while( stm, ">" );
-                        if ( _node.tagName == _next.chunk ) {
-                            // end tag in current elemenet
-                            _nodes.push( _node );
-                            _node = null;
-                        } else {
-                            // error end of tags.
-                            throw _node.chunk + "error end of tags";
-                        }
-                        break;
-                    } else {
-                        // end tag in parent element
-                        stm.unshift( next.data + _next );
-                        return _nodes;
-                    }
-                } else {
-                    stm.unshift( _next );
-                    _node = new element();
-                }
-                break;
-            case "!":
-                var _next;
-                // doctype
-                // comment
-                _next = stm.read( 2 );
-                if ( _next == '--' ) {
-                    _node = new comment();
-                    this._comment_start( stm, _node );
-                    _nodes.push( _node );
-                    _node = null;
-                    break;
-                } else {
-                    stm.unshift( _next );
-                }
-
-                // dtds
-                _next = stm.read( 8 );
-                if ( _next.toUpperCase() == 'DOCTYPE ' ) {
-                    _node = new doctype( 'DOCTYPE' );
-                    this._doctype_start( stm, _node );
-                    _nodes.push( _node );
-                    _node = null;
-                    break;
-                } else {
-                    stm.unshift( _next );
-                }
-
-                break;
-            case "\\?":
-                var _next;
-               
-                // xml head
-                _next = stm.read( 4 );
-                if ( _next && _next.toLowerCase() == 'xml ' ) {
-                    _node = new xml();
-                    _node.attributes = this._attribute_start( stm, _node );
-                    _nodes.push( _node );
-                    _node = null;
-                    break;
-                } else {
-                    stm.unshift( _next );
-                }
- 
-                // xml head tag close
-                _next = stm.read( 1 );
-                if ( _next && _next == '>' && _node ) {
-                    break;
-                } else {
-                    stm.unshift( _next );
-                }
-
-                stm.unshift( next.chunk );
-
-                break;
-            case " ":
-            case ">":
-            case "\\/":
-                // tag name
-                if ( _node !== null && ! _node.nodeName ) {
-                    var _n = next.chunk.toLowerCase().trim();
-                    if ( _n.length > 0 ) {
-                        var _pn = _n.split( ":" );
-
-                        if ( _pn.length != 2 ) {
-                            _node = new element( null, _n );
-                        } else {
-                            _node = new element( _pn[0], _pn[1] );
-                        }
-
-                        if ( next.reg == " " ) {
-                            _node.attributes = this._attribute_start( stm, _node );
-                        } else {
-                            _node.attributes = [];
-                        }
-                    }
-                }
-
-                // tag end
-                if ( next.reg == '>' && _node !== null ) {
-                    // html only
-                    // void elememts list, from [https://www.w3.org/TR/html/syntax.html#void-elements]
-                    var _end_tag_forbidden = [ 'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'menuitem', 'meta', 'param', 'source', 'track', 'wbr' ];
-                    if ( _end_tag_forbidden.indexOf( _node.tagName ) != -1 ) {
-                        _nodes.push( _node );
-                        _node = null;
-                    } else {
-                        // recursive into child node
-                        _node.childNodes = this._tag_start( stm );
-                    }
-                    break;
-                }
-                // end tag
-                if ( next.reg == '\\/' && _node !== null ) {
-                    var _next = stm.read( 1 );
-
-                    if ( _next == '>' ) {
-                        _nodes.push( _node );
-                        _node = null;
-                    } else {
-                        stm.unshift( next.data + _next );
-                    }
-                }
-                break;
-            }
-        }
-
-        */
     },
 
     _text_start : function( stm, node ) {
-        var next;
+        var next = this._do_while( stm, "<" );
 
-        while ( next = this._do_while( stm, "<" ) ) {
-            if ( ! next ) {
-                throw 'Missing end of the tag.'
-            }
-
-            node.nodeValue = next.chunk;
+        if ( next ) {
+            node.nodeValue = next.chunk.trim();
             stm.unshift( next.data );
-            return;
         }
     },
 
     _comment_start : function( stm, node ) {
         var next = null;
-        var trunk = '';
+        var chunk = '';
 
         while ( next = this._do_while( stm, "-" ) ) {
+            chunk += next.chunk;
             var _split = "-";
-            var _temp = stm.read( 2 );
+            var _n = stm.read( 2 );
             // -->
-            if ( ( _split + _temp ) == '-->' ) {
-                node.nodeValue = trunk;
+            if ( ( _split + _n ) == '-->' ) {
+                node.nodeValue = chunk.trim();
                 return;
             } else {
-                stm.unshift( _temp );
-                trunk += next.chunk + _split;
+                stm.unshift( _n );
+                chunk += next.data;
             }
         }
     },
@@ -566,18 +440,19 @@ html_analyze.__proto__ = {
         var next = null;
         var trunk;
 
-        while ( next = this._do_while( stm, " ", ">" ) ) {
+        while ( next = this._do_while( stm, "\\s", ">" ) ) {
             switch ( next.reg ) {
             case ">":
-            case " ":
+            case "\\s":
                 if ( ! node.name ) {
                     node.name = next.chunk.toLowerCase();
                 }
 
-                if ( next.chunk.toUpperCase() == "PUBLIC" ) {
-                    node.fpi = this._value_start( stm );
-                    node.publicId = this._value_start( stm );
-                } else if ( next.chunk.toUpperCase() == "SYSTEM" ) {
+                if ( next.chunk.toUpperCase() == "PUBLIC" || next.chunk.toUpperCase() == "SYSTEM" ) {
+                    if ( next.chunk.toUpperCase() == "PUBLIC" ) {
+                        node.publicId = this._value_start( stm );
+                    }
+
                     node.systemId = this._value_start( stm );
                 }
 
@@ -592,15 +467,15 @@ html_analyze.__proto__ = {
     _value_start : function( stm ) {
         var next;
 
-        while ( next = this._do_while( stm, "\"", " ", ">", "\\?", "\\/" ) ) {
+        while ( next = this._do_while( stm, "\"|\'", "\\s", ">", "\\?", "\\/" ) ) {
             switch ( next.reg ) {
-            case "\"":
-                var _next = this._do_while( stm, "\"" );
+            case "\"|\'":
+                var _next = this._do_while( stm, next.data );
                 if ( ! _next ) {
-                    throw 'Missing terminators "\""';
+                    throw `Missing terminators "${next.data}"`;
                 }
                 return _next.chunk;
-            case " ":
+            case "\\s":
                 break;
             case ">":
             case "\\?":
@@ -612,12 +487,24 @@ html_analyze.__proto__ = {
         return null;
     },
 
+    _text_value_start : function ( stm, node ) {
+        var next = this._do_while( stm, "<" );
+
+        if ( next ) {
+            node.nodeValue = next.chunk;
+            stm.unshift( next.data );
+            return next.chunk;
+        }
+
+        return null;
+    },
+
     _attribute_start : function ( stm, node ) {
         var _attrs = [];
         var _attr = null;
         var next = null;
 
-        while ( next = this._do_while( stm, " ", "\\/", ">", "=", "\\?" ) ) {
+        while ( next = this._do_while( stm, "\\s", "\\/", ">", "=", "\\?" ) ) {
             // attr name
             if ( ! _attr ) {
                 var _n = next.chunk.toLowerCase().trim();

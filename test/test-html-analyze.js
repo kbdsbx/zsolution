@@ -18,8 +18,8 @@ function test_html_analyze () {
             var expected = output
             assert.deepEqual( actual, expected );
         } catch( e ) {
-            console.log( JSON.stringify( actual, null, '\t' ) );
-            console.log( JSON.stringify( expected, null, '\t' ) );
+            console.log( JSON.stringify( actual, null, '  ' ) );
+            console.log( JSON.stringify( expected, null, '  ' ) );
         }
     }
 
@@ -44,6 +44,15 @@ test_html_analyze.__proto__ = {
             } ],
         },
         {
+            // comment
+            input: '<!-- This is comment test. -->',
+            output: [ {
+                nodeType : 'comment',
+                nodeName : '#comment',
+                nodeValue : 'This is comment test.',
+            } ],
+        },
+        {
             // doctype html5
             input: '<!DOCTYPE html>',
             output: [ {
@@ -62,14 +71,23 @@ test_html_analyze.__proto__ = {
             } ],
         },
         {
+            // doctype html5
+            input: '<!doctype html >',
+            output: [ {
+                nodeType : 'document_type',
+                nodeName : 'DOCTYPE',
+                name : 'html',
+            } ],
+        },
+        {
             // doctype xhtml 1.0 with public dtd
             input: '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" >',
             output: [ {
                 nodeType : 'document_type',
                 nodeName : 'DOCTYPE',
                 name : 'html',
-                publicId : "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd",
-                fpi: "-//W3C//DTD XHTML 1.0 Transitional//EN",
+                publicId: "-//W3C//DTD XHTML 1.0 Transitional//EN",
+                systemId: "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd",
             } ],
         },
         {
@@ -207,7 +225,7 @@ test_html_analyze.__proto__ = {
             } ],
         },
         {
-            input : '<area ><base/><br /><col><embed class="class2"><img class="class2"/><input class="class2" />',
+            input : '<area ><base/><br /><col><embed class="class2"><img class="class2"/><input class="class2" /><input checked><input checked ><input checked/><input checked />',
             output : [ {
                 prefix: null,
                 localName : 'area',
@@ -272,6 +290,54 @@ test_html_analyze.__proto__ = {
                     name : 'class',
                     value : 'class2',
                 } ],
+            }, {
+                prefix: null,
+                localName : 'input',
+                tagName : 'input',
+                nodeType : 'element',
+                nodeName : 'input',
+                attributes : [ {
+                    prefix : null,
+                    localName : 'checked',
+                    name : 'checked',
+                    value : null,
+                } ],
+            }, {
+                prefix: null,
+                localName : 'input',
+                tagName : 'input',
+                nodeType : 'element',
+                nodeName : 'input',
+                attributes : [ {
+                    prefix : null,
+                    localName : 'checked',
+                    name : 'checked',
+                    value : null,
+                } ],
+            }, {
+                prefix: null,
+                localName : 'input',
+                tagName : 'input',
+                nodeType : 'element',
+                nodeName : 'input',
+                attributes : [ {
+                    prefix : null,
+                    localName : 'checked',
+                    name : 'checked',
+                    value : null,
+                } ],
+            }, {
+                prefix: null,
+                localName : 'input',
+                tagName : 'input',
+                nodeType : 'element',
+                nodeName : 'input',
+                attributes : [ {
+                    prefix : null,
+                    localName : 'checked',
+                    name : 'checked',
+                    value : null,
+                } ],
             } ],
         },
         {
@@ -294,6 +360,157 @@ test_html_analyze.__proto__ = {
                     nodeValue : 'This is test text tag',
                 } ],
             }],
+        },
+        {
+            input : 'This is test text.',
+            output : [ {
+                nodeType : 'text',
+                nodeName : '#text',
+                nodeValue : 'This is test text.',
+            } ],
+        },
+        {
+            input : '<txt attr=\'keyword\'> First Keyword Second Keyword <b>Important Keyword</b> Other Keyword </txt>',
+            output : [ {
+                prefix : null,
+                localName : 'txt',
+                tagName : 'txt',
+                nodeType : 'element',
+                nodeName : 'txt',
+                attributes : [ {
+                    prefix : null,
+                    localName : 'attr',
+                    name : 'attr',
+                    value : 'keyword',
+                } ],
+                childNodes : [ {
+                    nodeType : 'text',
+                    nodeName : '#text',
+                    nodeValue : 'First Keyword Second Keyword',
+                }, {
+                    prefix : null,
+                    localName : 'b',
+                    tagName : 'b',
+                    nodeType : 'element',
+                    nodeName : 'b',
+                    attributes : [],
+                    childNodes : [ {
+                        nodeType : 'text',
+                        nodeName : '#text',
+                        nodeValue : 'Important Keyword',
+                    } ],
+                }, {
+                    nodeType : 'text',
+                    nodeName : '#text',
+                    nodeValue : 'Other Keyword',
+                } ],
+            } ],
+        },
+        {
+            input: `<title>New title.</title><pre>
+
+
+                resl
+                </pre>`,
+            output : [ {
+                prefix: null,
+                localName : 'title',
+                tagName : 'title',
+                nodeType : 'element',
+                nodeName : 'title',
+                nodeValue : 'New title.',
+                attributes : [],
+            }, {
+                prefix: null,
+                localName : 'pre',
+                tagName : 'pre',
+                nodeType : 'element',
+                nodeName : 'pre',
+                nodeValue : `
+
+
+                resl
+                `,
+                attributes : [],
+            } ],
+        },
+        {
+            input : 'UFS-8 编码支持',
+            output : [ {
+                nodeType : 'text',
+                nodeName : '#text',
+                nodeValue : 'UFS-8 编码支持',
+            } ],
+        },
+        {
+            input : `
+            <body>
+                <meta charset="utf-8">
+                <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+                <!-- 让部分国产浏览器默认采用高速模式渲染页面 -->
+            </body>
+                `,
+            output : [ {
+                prefix: null,
+                localName : 'body',
+                tagName : 'body',
+                nodeType : 'element',
+                nodeName : 'body',
+                attributes : [],
+                childNodes : [ {
+                    prefix: null,
+                    localName : 'meta',
+                    tagName : 'meta',
+                    nodeType : 'element',
+                    nodeName : 'meta',
+                    attributes : [ {
+                        prefix : null,
+                        localName : 'charset',
+                        name : 'charset',
+                        value : 'utf-8',
+                    } ],
+                }, {
+                    prefix: null,
+                    localName : 'meta',
+                    tagName : 'meta',
+                    nodeType : 'element',
+                    nodeName : 'meta',
+                    attributes : [ {
+                        prefix : null,
+                        localName : 'http-equiv',
+                        name : 'http-equiv',
+                        value : 'X-UA-Compatible',
+                    }, {
+                        prefix : null,
+                        localName : 'content',
+                        name : 'content',
+                        value : 'IE=edge',
+                    } ],
+                }, {
+                    prefix: null,
+                    localName : 'meta',
+                    tagName : 'meta',
+                    nodeType : 'element',
+                    nodeName : 'meta',
+                    attributes : [ {
+                        prefix : null,
+                        localName : 'name',
+                        name : 'name',
+                        value : 'viewport',
+                    }, {
+                        prefix : null,
+                        localName : 'content',
+                        name : 'content',
+                        value : 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+                    } ],
+                }, {
+                    nodeType : 'comment',
+                    nodeName : '#comment',
+                    nodeValue : '让部分国产浏览器默认采用高速模式渲染页面',
+                } ],
+            } ]
         },
 
         /*
