@@ -1,31 +1,54 @@
 
 const assert = require( 'assert' );
+const fs = require( 'fs' );
 var html_analyze = require( __dirname + '/../js/lib/html-analyze.js' );
 
 exports = module.exports = test_html_analyze;
 
 function test_html_analyze () {
-    var _ana = html_analyze( {
-        strict: true,
-    } );
+    var _ana = new html_analyze();
 
     for ( var i in test_html_analyze.cases ) {
         var str_stream = _ana.load_by_string( test_html_analyze.cases[i].input );
-        var output = _ana.analyzing( str_stream );
+
+        var output = _ana.parse( str_stream );
 
         try {
             var actual = test_html_analyze.cases[i].output;
-            var expected = output
+            var expected = output;
             assert.deepEqual( actual, expected );
         } catch( e ) {
+            console.log( "Assert not Pass No.: " + ( 1 + parseInt( i ) ) );
             console.log( JSON.stringify( actual, null, '  ' ) );
             console.log( JSON.stringify( expected, null, '  ' ) );
         }
+
+        var stringify = _ana.stringify( output );
+
+        try {
+            var actual = test_html_analyze.cases[i].stringify.trim();
+            var expected = stringify;
+            assert.equal( actual, expected );
+        } catch ( e ) {
+            console.log( "Assert not Pass No.: " + ( 1 + parseInt( i ) ) );
+            console.log( actual );
+            console.log( expected );
+        }
+    }
+
+    for ( var i in test_html_analyze.error_cases ) {
+        var str_stream = _ana.load_by_string( test_html_analyze.error_cases[i].input );
+
+        assert.throws( () => {
+            _ana.parse( str_stream );
+        }, test_html_analyze.error_cases[i].exception );
     }
 
     test_html_analyze.test_load_by_string( _ana );
 
     test_html_analyze.test_do_while( _ana );
+
+    test_html_analyze.test_load_by_file( _ana );
 }
 
 test_html_analyze.__proto__ = {
@@ -33,6 +56,7 @@ test_html_analyze.__proto__ = {
         {
             input : '',
             output : [],
+            stringify : '',
         },
         {
             // comment
@@ -42,6 +66,7 @@ test_html_analyze.__proto__ = {
                 nodeName : '#comment',
                 nodeValue : '------------',
             } ],
+            stringify : '<!-- ------------ -->',
         },
         {
             // comment
@@ -51,6 +76,7 @@ test_html_analyze.__proto__ = {
                 nodeName : '#comment',
                 nodeValue : 'This is comment test.',
             } ],
+            stringify : '<!-- This is comment test. -->',
         },
         {
             // doctype html5
@@ -60,6 +86,7 @@ test_html_analyze.__proto__ = {
                 nodeName : 'DOCTYPE',
                 name : 'html',
             } ],
+            stringify : '<!DOCTYPE html>',
         },
         {
             // doctype html5
@@ -69,6 +96,7 @@ test_html_analyze.__proto__ = {
                 nodeName : 'DOCTYPE',
                 name : 'html',
             } ],
+            stringify : '<!DOCTYPE html>',
         },
         {
             // doctype html5
@@ -78,6 +106,7 @@ test_html_analyze.__proto__ = {
                 nodeName : 'DOCTYPE',
                 name : 'html',
             } ],
+            stringify : '<!DOCTYPE html>',
         },
         {
             // doctype xhtml 1.0 with public dtd
@@ -89,6 +118,7 @@ test_html_analyze.__proto__ = {
                 publicId: "-//W3C//DTD XHTML 1.0 Transitional//EN",
                 systemId: "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd",
             } ],
+            stringify : '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">',
         },
         {
             // doctype html with system dtd
@@ -99,6 +129,7 @@ test_html_analyze.__proto__ = {
                 name : 'html',
                 systemId : "../xhtml1-transitional.dtd",
             } ],
+            stringify: '<!DOCTYPE html SYSTEM "../xhtml1-transitional.dtd">',
         },
         {
             input: '<?xml version="1.0" encoding="UTF-8"?>',
@@ -117,6 +148,7 @@ test_html_analyze.__proto__ = {
                     value : 'UTF-8',
                 } ],
             } ],
+            stringify: '<?xml version="1.0" encoding="UTF-8"?>',
         },
         {
             input : '<a href="#" class="class1 class2 class3"></a>',
@@ -139,6 +171,7 @@ test_html_analyze.__proto__ = {
                     value : 'class1 class2 class3',
                 } ],
             } ],
+            stringify: '<a href="#" class="class1 class2 class3">\n</a>',
         },
         {
             input : '<div class="first-class last-class" id = "div"><a href="#" class="class2 class3 class4"></a></div>',
@@ -179,6 +212,11 @@ test_html_analyze.__proto__ = {
                     value : 'div',
                 } ],
             } ],
+            stringify: `
+<div class="first-class last-class" id="div">
+  <a href="#" class="class2 class3 class4">
+  </a>
+</div>`,
         },
         {
             input : '<html:input xml:tag="input" type ="file" data:input= "data" contenteditable value="null"></html:input><br>',
@@ -223,6 +261,10 @@ test_html_analyze.__proto__ = {
                 nodeName : 'br',
                 attributes : [],
             } ],
+            stringify : `
+<html:input xml:tag="input" type="file" data:input="data" contenteditable value="null">
+</html:input>
+<br>`,
         },
         {
             input : '<area ><base/><br /><col><embed class="class2"><img class="class2"/><input class="class2" /><input checked><input checked ><input checked/><input checked />',
@@ -339,6 +381,19 @@ test_html_analyze.__proto__ = {
                     value : null,
                 } ],
             } ],
+            stringify : `
+<area>
+<base>
+<br>
+<col>
+<embed class="class2">
+<img class="class2">
+<input class="class2">
+<input checked>
+<input checked>
+<input checked>
+<input checked>
+                `,
         },
         {
             input : '<a href="#">This is test text tag</a>',
@@ -360,6 +415,11 @@ test_html_analyze.__proto__ = {
                     nodeValue : 'This is test text tag',
                 } ],
             }],
+            stringify : `
+<a href="#">
+  This is test text tag
+</a>
+                `,
         },
         {
             input : 'This is test text.',
@@ -368,6 +428,7 @@ test_html_analyze.__proto__ = {
                 nodeName : '#text',
                 nodeValue : 'This is test text.',
             } ],
+            stringify : "This is test text.",
         },
         {
             input : '<txt attr=\'keyword\'> First Keyword Second Keyword <b>Important Keyword</b> Other Keyword </txt>',
@@ -405,6 +466,15 @@ test_html_analyze.__proto__ = {
                     nodeValue : 'Other Keyword',
                 } ],
             } ],
+            stringify: `
+<txt attr="keyword">
+  First Keyword Second Keyword
+  <b>
+    Important Keyword
+  </b>
+  Other Keyword
+</txt>
+                `,
         },
         {
             input: `<title>New title.</title><pre>
@@ -433,14 +503,23 @@ test_html_analyze.__proto__ = {
                 `,
                 attributes : [],
             } ],
+            stringify : `
+<title>New title.</title>
+<pre>
+
+
+                resl
+                </pre>
+                `,
         },
         {
-            input : 'UFS-8 编码支持',
+            input : 'UFS-8 编码支持 (Unicode support!)',
             output : [ {
                 nodeType : 'text',
                 nodeName : '#text',
-                nodeValue : 'UFS-8 编码支持',
+                nodeValue : 'UFS-8 编码支持 (Unicode support!)',
             } ],
+            stringify : "UFS-8 编码支持 (Unicode support!)",
         },
         {
             input : `
@@ -510,12 +589,29 @@ test_html_analyze.__proto__ = {
                     nodeName : '#comment',
                     nodeValue : '让部分国产浏览器默认采用高速模式渲染页面',
                 } ],
-            } ]
+            } ],
+            stringify : `
+<body>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <!-- 让部分国产浏览器默认采用高速模式渲染页面 -->
+</body>
+                `,
         },
-
         /*
         */
     ],
+
+    error_cases : [ {
+        input : `<div>
+
+                <p>
+                Error strict.
+                </div>
+                `,
+        exception : `error end of tags.\n\tline number: 4`,
+    } ],
 
     test_load_by_string : function( ana ) {
         var str_stream = ana.load_by_string( 'Text' );
@@ -564,6 +660,22 @@ test_html_analyze.__proto__ = {
         idx = ana._do_while( str_stream, "<", "!", " ", ">" );
 
         assert( ! idx );
+    },
+
+    test_load_by_file : function ( ana ) {
+        var str_stream = ana.load_by_file( __dirname + '/data/index.html' );
+        var stringify = "";
+
+        str_stream.on( 'readable', function() {
+            var output = ana.parse( str_stream );
+            stringify += ana.stringify( output, {
+                replacer: "\n",
+                space : "\t",
+            } );
+
+        } ).on( 'end', function() {
+            fs.writeFileSync( __dirname + '/data/index-parsed.html', stringify, { flag : "w+" } );
+        } );
     },
 };
 

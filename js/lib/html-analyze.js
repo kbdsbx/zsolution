@@ -2,15 +2,13 @@
 
 const stream = require( 'stream' );
 const buffer = require( 'buffer' );
+const fs = require( 'fs' );
 const $ = require( __dirname + '/../inc.js' );
 
 exports = module.exports = html_analyze;
 
 function html_analyze ( opt ) {
-    var _self = html_analyze;
-    _self.options = $.extend( _self.options, opt );
-
-    return _self;
+    return this;
 }
 
 /**
@@ -175,9 +173,27 @@ comment.prototype = $.extend( new node(), {
 } );
 
 
-html_analyze.__proto__ = {
+/**
+ * Exception for html analyze.
+ */
+
+function html_analyze_exception ( msg, stack ) {
+    return `${msg}\n\tline number: ${stack.line}`;
+}
+
+
+html_analyze.prototype = {
     options : {
-        strict: false,
+        replacer : '\n',
+        space : '  ',
+    },
+
+    _stack : {
+        line : 0,
+    },
+
+    _exception : function ( msg ) {
+        return html_analyze_exception( msg, this._stack );
     },
 
     load_by_string : function( text ) {
@@ -189,16 +205,35 @@ html_analyze.__proto__ = {
         rb._read = function _read( size ) {
         };
 
+        rb.pause();
+
         rb.push( bf );
 
         return rb;
     },
 
     load_by_file : function( path ) {
+        if ( fs.existsSync ( path ) ) {
+            var rs = fs.createReadStream( path, {
+                encoding: 'utf8',
+            } );
+
+            rs.pause();
+
+            return rs;
+        }
     },
 
-    analyzing : function( stm ) {
+    parse : function( stm ) {
+        // reset stack;
+        this._stack.line = 0;
+
         return this._dom_start( stm );
+    },
+
+    stringify : function( dom, options ) {
+        this.options = $.extend( this.options, options );
+        return this._node_stringify( dom, '' ).trim();
     },
 
     // void elememts list, from [https://www.w3.org/TR/html/syntax.html#void-elements]
@@ -215,7 +250,7 @@ html_analyze.__proto__ = {
      *   _do_while( stream, "reg1", "reg2", "reg3" );
      *   _do_while( stream, [ "reg1", "reg2", "reg3" ] );
      */
-    _do_while( stm, regs /* ... */ ) {
+    _do_while : function ( stm, regs /* ... */ ) {
         var _data, _chunk = "";
         var _regs = [];
 
@@ -228,6 +263,11 @@ html_analyze.__proto__ = {
         }
       
         while ( _data = stm.read( 1 ) ) {
+
+            if ( _data == '\n' ) {
+                this._stack.line++;
+            }
+
             for ( var idx = 1; idx < _regs.length; idx++ ) {
                 if ( RegExp( _regs[idx], 'i' ).test( _data ) ) {
                     return { chunk : _chunk, reg : _regs[idx], data: _data };
@@ -243,12 +283,25 @@ html_analyze.__proto__ = {
 
         return null;
     },
+    _unshift : function ( stm, chunk ) {
+        const _chunk = chunk || "";
+        var _count = 0;
+        var _pos = _chunk.indexOf( '\n' );
+
+        while ( _pos !== -1 ) {
+            _count++;
+            _pos = _chunk.indexOf( '\n', _pos + 1 );
+        }
+
+        this._stack.line = ( this._stack.line - _count > 0 ? this._stack.line - _count : 0 );
+        stm.unshift( chunk );
+    },
 
     _dom_start : function( stm ) {
         var next = null;
 
         while ( next = this._do_while( stm, "\\S" ) ) {
-            stm.unshift( next.data );
+            this._unshift( stm, next.data );
             return this._node_start( stm );
         }
 
@@ -274,17 +327,16 @@ html_analyze.__proto__ = {
                             _node = null;
                             continue;
                         } else {
-                    console.log( _node.nodeName );
                             // error end of tags.
-                            throw "error end of tags";
+                            throw this._exception( "error end of tags." );
                         }
                         break;
                     } else {
-                        stm.unshift( next.data + _n );
+                        this._unshift( stm, next.data + _n );
                         return _nodes;
                     }
                 } else {
-                    stm.unshift( _n );
+                    this._unshift( stm, _n );
                 }
                 _node = new node();
                 if ( null == this._tag_start( stm, _node ) ) {
@@ -295,7 +347,7 @@ html_analyze.__proto__ = {
                 }
             } else if ( next.reg == "[^\\s<]" ) {
                 if ( next.data.trim().length > 0 ) {
-                    stm.unshift( next.data );
+                    this._unshift( stm, next.data );
 
                     _node = new text();
                     this._text_start( stm, _node );
@@ -355,7 +407,7 @@ html_analyze.__proto__ = {
                     if ( _n == '>' ) {
                         return;
                     } else {
-                        throw 'Missing ">" after "/".';
+                        throw this._exception( 'Missing ">" after "/".' );
                     }
                 }
                 break;
@@ -370,7 +422,7 @@ html_analyze.__proto__ = {
                     this._comment_start( stm, _node );
                     return;
                 } else {
-                    stm.unshift( _n );
+                    this._unshift( stm, _n );
                 }
 
                 // dtds
@@ -380,7 +432,7 @@ html_analyze.__proto__ = {
                     this._doctype_start( stm, _node );
                     return;
                 } else {
-                    stm.unshift( _next );
+                    this._unshift( stm, _next );
                 }
 
                 break;
@@ -393,14 +445,14 @@ html_analyze.__proto__ = {
                     xml.call( _node );
                     _node.attributes = this._attribute_start( stm, _node );
                 } else {
-                    stm.unshift( _n );
+                    this._unshift( stm, _n );
                 }
                 
                 _n = stm.read( 1 );
                 if ( _n && _n == '>' ) {
                     return;
                 } else {
-                    stm.unshift( _n );
+                    this._unshift( stm, _n );
                 }
 
                 break;
@@ -413,7 +465,7 @@ html_analyze.__proto__ = {
 
         if ( next ) {
             node.nodeValue = next.chunk.trim();
-            stm.unshift( next.data );
+            this._unshift( stm, next.data );
         }
     },
 
@@ -430,7 +482,7 @@ html_analyze.__proto__ = {
                 node.nodeValue = chunk.trim();
                 return;
             } else {
-                stm.unshift( _n );
+                this._unshift( stm, _n );
                 chunk += next.data;
             }
         }
@@ -472,7 +524,7 @@ html_analyze.__proto__ = {
             case "\"|\'":
                 var _next = this._do_while( stm, next.data );
                 if ( ! _next ) {
-                    throw `Missing terminators "${next.data}"`;
+                    throw this._exception( `Missing terminators "${next.data}".` );
                 }
                 return _next.chunk;
             case "\\s":
@@ -480,7 +532,7 @@ html_analyze.__proto__ = {
             case ">":
             case "\\?":
             case "\\/":
-                throw 'Missing value of tag.'
+                throw this._exception( 'Missing value of tag.' );
             }
         }
 
@@ -492,7 +544,7 @@ html_analyze.__proto__ = {
 
         if ( next ) {
             node.nodeValue = next.chunk;
-            stm.unshift( next.data );
+            this._unshift( stm, next.data );
             return next.chunk;
         }
 
@@ -523,7 +575,7 @@ html_analyze.__proto__ = {
                     _attrs.push( _attr );
                     _attr = null;
 
-                    stm.unshift( next.chunk + next.data );
+                    this._unshift( stm, next.chunk + next.data );
                 }
             }
 
@@ -535,7 +587,7 @@ html_analyze.__proto__ = {
             }
 
             if ( next.reg == ">" ) {
-                stm.unshift( next.data );
+                this._unshift( stm, next.data );
 
                 if ( _attr ) {
                     _attrs.push( _attr );
@@ -547,7 +599,7 @@ html_analyze.__proto__ = {
                 var _next = stm.read( 1 );
 
                 if ( _next == ">" ) {
-                    stm.unshift( _next );
+                    this._unshift( stm, _next );
 
                     if ( _attr ) {
                         _attrs.push( _attr );
@@ -558,5 +610,96 @@ html_analyze.__proto__ = {
         }
 
         return _attrs;
+    },
+
+
+    /* stringify */
+
+    _node_stringify : function( dom, indent ) {
+        var _res = ``;
+        for ( var idx in dom ) {
+            if ( dom[idx] ) {
+                switch( dom[idx].nodeType ) {
+                case 'document_type' : 
+                    if ( dom[idx].nodeName.toUpperCase() == 'XML' ) {
+                        _res += this._xml_stringify( dom[idx], indent );
+                    }
+                    if ( dom[idx].nodeName.toUpperCase() == 'DOCTYPE' ) {
+                        _res += this._doctype_stringify( dom[idx], indent );
+                    }
+                    break;
+                case 'element':
+                    _res += this._element_stringify( dom[idx], indent );
+                    break;
+                case 'text':
+                    _res += this._text_stringify( dom[idx], indent );
+                    break;
+                case 'comment':
+                    _res += this._comment_stringify( dom[idx], indent );
+                    break;
+                }
+            }
+        }
+
+        return _res;
+    },
+
+    _xml_stringify : function ( node, indent ) {
+        var _attrs = this._attribute_stringify( node );
+        return `${indent}<?xml${_attrs}?>`;
+    },
+
+    _doctype_stringify : function ( node, indent ) {
+        var _name = node.name.toLowerCase();
+        var _publicId = node.publicId ? ` "${node.publicId}"` : "";
+        var _systemId = node.systemId ? ` "${node.systemId}"` : "";
+        var _fpi = _systemId ? _publicId ? " PUBLIC" : " SYSTEM" : "";
+        return `${indent}<!DOCTYPE ${_name}${_fpi}${_publicId}${_systemId}>${this.options.replacer}`;
+    },
+
+    _element_stringify : function ( node, indent ) {
+        var _attrs = this._attribute_stringify( node );
+        var _res = `${indent}<${node.nodeName}${_attrs}>`;
+
+        if ( this._raw_text_elements.indexOf( node.nodeName ) != -1 ) {
+            _res += `${node.nodeValue}`;
+            _res += `</${node.nodeName}>${this.options.replacer}`;
+
+            return _res;
+        }
+
+        if ( node.childNodes ) {
+            _res += this.options.replacer;
+            _res += this._node_stringify( node.childNodes, indent + this.options.space );
+        }
+
+        if ( this._void_elements.indexOf( node.nodeName ) == -1 ) {
+            _res += `${indent}</${node.nodeName}>${this.options.replacer}`;
+        }
+
+        return _res;
+    },
+
+    _text_stringify : function ( node, indent ) {
+        return `${indent}${node.nodeValue}${this.options.replacer}`;
+    },
+
+    _comment_stringify : function ( node, indent ) {
+        return `${indent}<!-- ${node.nodeValue} -->${this.options.replacer}`;
+    },
+
+    _attribute_stringify : function ( node ) {
+        var _res = ``;
+
+        for ( var idx in node.attributes ) {
+            var attr = node.attributes[idx];
+            if ( attr.value ) {
+                _res += ` ${attr.name}="${attr.value}"`;
+            } else {
+                _res += ` ${attr.name}`;
+            }
+        }
+
+        return _res;
     },
 };
