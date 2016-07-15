@@ -1,4 +1,5 @@
 
+const $ = require( __dirname + '/../js/inc.js' );
 const assert = require( 'assert' );
 const fs = require( 'fs' );
 var html_analyze = require( __dirname + '/../js/lib/html-analyze.js' );
@@ -13,16 +14,20 @@ function test_html_analyze () {
 
         var output = _ana.parse( str_stream );
 
-        try {
-            var actual = test_html_analyze.cases[i].output;
-            var expected = output;
-            assert.deepEqual( actual, expected );
-        } catch( e ) {
-            console.log( "Assert not Pass No.: " + ( 1 + parseInt( i ) ) );
-            console.log( JSON.stringify( actual, null, '  ' ) );
-            console.log( JSON.stringify( expected, null, '  ' ) );
+        var actual = test_html_analyze.cases[i].output;
+        var expected = output;
+        // assert.deepEqual( actual, expected );
+        if ( ! $.deepsEqual( actual, expected, ( a, b ) => {
+            if ( typeof a == 'function' || typeof b == 'function' ) {
+                return true;
+            }
+            return a == b;
+        } ) ) {
+            console.log( "Parse assert not pass No.: " + ( 1 + parseInt( i ) ) );
+            console.log( actual );
+            console.log( expected );
         }
-
+        
         var stringify = _ana.stringify( output );
 
         try {
@@ -30,7 +35,7 @@ function test_html_analyze () {
             var expected = stringify;
             assert.equal( actual, expected );
         } catch ( e ) {
-            console.log( "Assert not Pass No.: " + ( 1 + parseInt( i ) ) );
+            console.log( "Stringify assert not pass No.: " + ( 1 + parseInt( i ) ) );
             console.log( actual );
             console.log( expected );
         }
@@ -49,6 +54,10 @@ function test_html_analyze () {
     test_html_analyze.test_do_while( _ana );
 
     test_html_analyze.test_load_by_file( _ana );
+
+    test_html_analyze.test_attribute( _ana );
+
+    test_html_analyze.test_node( _ana );
 }
 
 test_html_analyze.__proto__ = {
@@ -171,7 +180,7 @@ test_html_analyze.__proto__ = {
                     value : 'class1 class2 class3',
                 } ],
             } ],
-            stringify: '<a href="#" class="class1 class2 class3">\n</a>',
+            stringify: '<a href="#" class="class1 class2 class3"></a>',
         },
         {
             input : '<div class="first-class last-class" id = "div"><a href="#" class="class2 class3 class4"></a></div>',
@@ -214,8 +223,7 @@ test_html_analyze.__proto__ = {
             } ],
             stringify: `
 <div class="first-class last-class" id="div">
-  <a href="#" class="class2 class3 class4">
-  </a>
+  <a href="#" class="class2 class3 class4"></a>
 </div>`,
         },
         {
@@ -262,8 +270,7 @@ test_html_analyze.__proto__ = {
                 attributes : [],
             } ],
             stringify : `
-<html:input xml:tag="input" type="file" data:input="data" contenteditable value="null">
-</html:input>
+<html:input xml:tag="input" type="file" data:input="data" contenteditable value="null"></html:input>
 <br>`,
         },
         {
@@ -677,5 +684,52 @@ test_html_analyze.__proto__ = {
             fs.writeFileSync( __dirname + '/data/index-parsed.html', stringify, { flag : "w+" } );
         } );
     },
+
+    test_attribute : function ( ana ) {
+        var str_stream = ana.load_by_string( '<div></div>' );
+        var output = ana.parse( str_stream );
+
+        assert.ok( output[0].setAttribute );
+        assert.ok( output[0].getAttribute );
+        assert.ok( output[0].hasAttribute );
+        assert.ok( output[0].removeAttribute );
+
+        output[0].setAttribute( 'name', 'new div' );
+
+        assert.equal( 'new div', output[0].getAttribute( 'name' ) );
+
+        assert.equal( undefined, output[0].getAttribute( 'none-name' ) );
+
+        assert.ok( output[0].hasAttribute( 'name' ) );
+
+        assert.ok( ! output[0].hasAttribute( 'none-name' ) );
+
+        assert.equal( '<div name="new div"></div>', ana.stringify( output ) );
+
+        output[0].setAttribute( 'xml:url', 'xml-name' );
+
+        assert.ok( output[0].hasAttribute( 'xml:url' ) );
+
+        assert.ok( ! output[0].hasAttribute( 'url' ) );
+
+        output[0].setAttribute( 'xml:url', 'http://127.0.0.1/' );
+
+        assert.equal( output[0].getAttribute( 'xml:url' ), 'http://127.0.0.1/' );
+
+        output[0].removeAttribute( 'name' )
+
+        assert.ok( ! output[0].hasAttribute( 'name' ) );
+
+        assert.equal( '<div xml:url="http://127.0.0.1/"></div>', ana.stringify( output ) );
+    },
+
+    test_node : function ( ana ) {
+        var str_stream = ana.load_by_string( '<div></div>' );
+        var output = ana.parse( str_stream );
+
+        assert.ok( output[0].hasChildNodes );
+
+        assert.ok( ! output[0].hasChildNodes() );
+    }
 };
 

@@ -10,7 +10,7 @@ exports = module.exports = remove;
 function remove( opt ) {
     let _self = remove;
 
-    _self.options = $.extend( remove.options, opt );
+    $.extend( remove.options, opt );
     _self.data_solutions = $.load_by( _self.data_file ) || {};
 
     let _json_file = _self.data_solutions[_self.options.name];

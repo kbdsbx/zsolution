@@ -45,12 +45,14 @@ program
     .option( '-o, --output_path [path]', 'the folder path that will be output.' )
     .option( '-c, --compress', 'compress js, css or other compressable files.' )
     .option( '-a, --absolute', 'compress absolutly and cover caches.' )
+    .option( '-d, --dev', 'using developing module.' )
     .action( ( name, obj ) => {
         var opt = {
             name : name,
             output_path: obj.output_path || null,
             compress: obj.compress || false,
             absolute: obj.absolute || false,
+            dev : obj.dev || false,
         }
 
         var compile = require( __dirname + '/js/compile.js' );

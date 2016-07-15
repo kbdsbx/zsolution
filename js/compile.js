@@ -10,7 +10,7 @@ exports = module.exports = compile;
 function compile( opt ) {
     let _self = compile;
 
-    _self.options = $.extend( compile.options, opt );
+    $.extend( compile.options, opt );
 
     _self.data_solutions = $.load_by( _self.data_file );
 
@@ -106,7 +106,11 @@ compile.__proto__ = {
                     case '.htm':
                     case '.html':
                     case '.shtml':
-                        require( __dirname + '/assert/html.js' ).compile( info, compile.options, compile.solution );
+                        if ( compile.options.dev ) {
+                            require( __dirname + '/assert/html2.js' ).compile( info, compile.options, compile.solution );
+                        } else {
+                            require( __dirname + '/assert/html.js' ).compile( info, compile.options, compile.solution );
+                        }
                         break;
 
                     case '.css':

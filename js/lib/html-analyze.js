@@ -45,6 +45,10 @@ node.prototype = {
     nodeValue: null,
 
     childNodes: [],
+
+    hasChildNodes : function() {
+        return this.childNodes && this.childNodes.length > 0;
+    },
 };
 
 /**
@@ -52,6 +56,8 @@ node.prototype = {
  */
 
 function element( prefix, localName ) {
+    $.merged( this, element.prototype );
+
     this.prefix = prefix;
     this.localName = localName;
     this.tagName = prefix ? prefix + ":" + localName : localName;
@@ -62,7 +68,7 @@ function element( prefix, localName ) {
     return this;
 }
 
-element.prototype = $.extend( new node(), {
+element.prototype = $.merging( new node(), {
     // before ":" in nodeName
     prefix : null,
     // after ":" in nodeName
@@ -74,14 +80,45 @@ element.prototype = $.extend( new node(), {
     attributes : [],
 
     getAttribute : function( name ) {
+        for ( var idx in this.attributes ) {
+            if ( this.attributes[idx].name == name ) {
+                return this.attributes[idx].value || true;
+            }
+        }
+
+        return undefined;
     },
 
-    setAttribute : function( name ) {
-        // coming soon;
+    setAttribute : function( name, value ) {
+        if ( ! this.attributes ) {
+            this.attributes = [];
+        }
+
+        for ( var idx in this.attributes ) {
+            if ( this.attributes[idx].name == name ) {
+                this.attributes[idx].value = value;
+
+                return this;
+            }
+        }
+
+        var _pn = name.split( ':' );
+        this.attributes.push( _pn.length == 2 ? new attribute( _pn[0], _pn[1], value ) : new attribute( null, name, value ) );
+
+        return this;
     },
 
     hasAttribute : function( name ) {
+        return !! this.getAttribute( name );
     },
+
+    removeAttribute : function( name ) {
+        for ( var idx in this.attributes ) {
+            if ( this.attributes[idx].name == name ) {
+                delete this.attributes[idx];
+            }
+        }
+    }
 } );
 
 
@@ -90,6 +127,8 @@ element.prototype = $.extend( new node(), {
  */
 
 function attribute( prefix, localName, value ) {
+    $.merged( this, attribute.prototype );
+
     this.prefix = prefix;
     this.localName = localName;
     this.name = prefix ? prefix + ":" + localName : localName;
@@ -113,16 +152,17 @@ attribute.prototype = {
  */
 
 function doctype( nodeName ) {
+    $.merged( this, doctype.prototype );
+
     this.nodeType = 'document_type';
     this.nodeName = nodeName;
 
     return this;
 }
 
-doctype.prototype = $.extend( new node(), {
+doctype.prototype = $.merging( new node(), {
     publicId : null,
     systemId : null,
-    fpi : null,
 } );
 
 
@@ -131,14 +171,14 @@ doctype.prototype = $.extend( new node(), {
  */
 
 function xml() {
+    $.merged( this, xml.prototype );
+
     this.nodeType = 'document_type';
     this.nodeName = 'xml';
     return this;
 }
 
-xml.prototype = $.extend( new node(), {
-    version : null,
-    encoding : null,
+xml.prototype = $.merging( new node(), {
 } );
 
 
@@ -147,6 +187,8 @@ xml.prototype = $.extend( new node(), {
  */
 
 function text ( textValue ) {
+    $.merged( this, text.prototype );
+
     this.nodeType = 'text';
     this.nodeName = '#text';
     this.nodeValue = textValue;
@@ -154,7 +196,7 @@ function text ( textValue ) {
     return this;
 }
 
-text.prototype = $.extend( new node(), {
+text.prototype = $.merging( new node(), {
 } );
 
 
@@ -163,13 +205,15 @@ text.prototype = $.extend( new node(), {
  */
 
 function comment ( nodeValue ) {
+    $.merged( this, comment.prototype );
+
     this.nodeType = 'comment';
     this.nodeName = '#comment';
 
     return this;
 }
 
-comment.prototype = $.extend( new node(), {
+comment.prototype = $.merging( new node(), {
 } );
 
 
@@ -232,7 +276,7 @@ html_analyze.prototype = {
     },
 
     stringify : function( dom, options ) {
-        this.options = $.extend( this.options, options );
+        $.extend( this.options, options );
         return this._node_stringify( dom, '' ).trim();
     },
 
@@ -668,14 +712,19 @@ html_analyze.prototype = {
             return _res;
         }
 
-        if ( node.childNodes ) {
-            _res += this.options.replacer;
-            _res += this._node_stringify( node.childNodes, indent + this.options.space );
+        if ( this._void_elements.indexOf( node.nodeName ) != -1 ) {
+            _res += `${this.options.replacer}`;
+
+            return _res;
         }
 
-        if ( this._void_elements.indexOf( node.nodeName ) == -1 ) {
-            _res += `${indent}</${node.nodeName}>${this.options.replacer}`;
+        if ( node.hasChildNodes() ) {
+            _res += this.options.replacer;
+            _res += this._node_stringify( node.childNodes, indent + this.options.space );
+            _res += indent;
         }
+
+        _res += `</${node.nodeName}>${this.options.replacer}`;
 
         return _res;
     },

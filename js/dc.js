@@ -9,7 +9,7 @@ const $ = require( __dirname + '/inc.js' );
 exports = module.exports = dc;
 
 function dc( opt ) {
-    dc.options = $.extend( dc.options, opt );
+    $.extend( dc.options, opt );
 }
 
 dc.__proto__ = {

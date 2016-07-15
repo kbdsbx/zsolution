@@ -10,7 +10,7 @@ exports = module.exports = init;
 
 function init( opt ) {
     let _self = init;
-    _self.options = $.extend( init.options, opt );
+    $.extend( init.options, opt );
 
     _self.data_solutions = $.load_by( _self.data_file ) || {};
 
@@ -22,7 +22,7 @@ function init( opt ) {
 
     if ( fs.existsSync( _json_file ) ) {
         try {
-            _self.options = $.extend( _self.options, $.load_by( _json_file ) );
+            $.extend( _self.options, $.load_by( _json_file ) );
             _self.data_solutions[ _self.options.name ] = _json_file;
             $.save_as( _self.data_file, _self.data_solutions )
         } catch ( e ) {

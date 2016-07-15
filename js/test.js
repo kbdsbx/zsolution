@@ -9,7 +9,7 @@ exports = module.exports = test;
 function test( opt ) {
     let _self = test;
 
-    _self.options = $.extend( _self.options, opt );
+    $.extend( _self.options, opt );
 
     if ( _self.options.name ) {
         let _test_js = __dirname + '/../test/test-' + _self.options.name + '.js';

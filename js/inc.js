@@ -189,20 +189,104 @@ exports.rmdir = function( path, deep ) {
     }
 }
 
-// extend
-exports.extend = function( obj_1, obj_2 ) {
-    var _res = {};
-    if ( obj_1 instanceof Object ) {
-        for ( var idx in obj_1 ) {
-            _res[idx] = obj_1[idx];
+
+/**
+ * merge destination object into source object.
+ *  -- by standard with source object.
+ */
+
+exports.extend = function( obj_src, obj_des ) {
+    if ( obj_src instanceof Object ) {
+        for ( var idx in obj_src ) {
+            if ( "undefined" !== typeof obj_des && obj_des[idx] ) {
+                if ( obj_src[idx] instanceof Object && obj_des[idx] instanceof Object ) {
+                    exports.extend( obj_src[idx], obj_des[idx] );
+                } else {
+                    obj_src[idx] = obj_des[idx];
+                }
+            }
         }
     }
 
-    if ( obj_2 instanceof Object ) {
-        for ( var idx in obj_2 ) {
-            _res[idx] = obj_2[idx];
+    return obj_src;
+}
+
+
+/**
+ * merge both object into once.
+ */
+
+exports.merging = function( obj_first, obj_last ) {
+    var _res = {};
+    if ( obj_first instanceof Object ) {
+        for ( var idx in obj_first ) {
+            _res[idx] = obj_first[idx];
+        }
+    }
+
+    if ( obj_last instanceof Object ) {
+        for ( var idx in obj_last ) {
+            _res[idx] = obj_last[idx];
         }
     }
 
     return _res;
 }
+
+
+/**
+ * merge source object into destination.
+ */
+
+exports.merged = function( obj_des, obj_src ) {
+
+    if ( obj_src instanceof Object && obj_des instanceof Object ) {
+        for ( var idx in obj_src ) {
+            obj_des[idx] = obj_src[idx];
+        }
+    }
+
+    return obj_des;
+}
+
+
+/**
+ * compare object indeeps with equal to or expression [optional]
+ */
+
+exports.deepsEqual = function ( obj_first, obj_last, expression ) {
+    
+    if ( typeof obj_first == 'object' && typeof obj_last == 'object' ) {
+        for ( var idx in obj_first ) {
+            if ( typeof obj_first[idx] == 'object' ) {
+                if ( ! exports.deepsEqual( obj_first[idx], obj_last[idx] ) ) {
+                    return false;
+                }
+            } else if ( obj_first[idx] != obj_last[idx] ) {
+                if ( typeof expression === 'function' ) {
+                    if ( ! expression( obj_first[idx], obj_last[idx] ) ) {
+                        return false;
+                    }
+                } else {
+                    if ( obj_first[idx] != obj_last[idx] ) {
+                        return false;
+                    }
+                }
+            }
+        }
+    } else {
+        if ( typeof expression === 'function' ) {
+            if ( ! expression( obj_first, obj_last ) ) {
+                return false;
+            }
+        } else {
+            if ( obj_first != obj_last ) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+
