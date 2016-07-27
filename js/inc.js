@@ -195,22 +195,39 @@ exports.rmdir = function( path, deep ) {
  *  -- by standard with source object.
  */
 
-exports.extend = function( obj_src, obj_des ) {
-    if ( obj_src instanceof Object ) {
-        for ( var idx in obj_src ) {
-            if ( "undefined" !== typeof obj_des && obj_des[idx] ) {
-                if ( obj_src[idx] instanceof Object && obj_des[idx] instanceof Object ) {
-                    exports.extend( obj_src[idx], obj_des[idx] );
+exports.extend = function( obj_des, obj_src ) {
+    if ( "object" === typeof obj_des ) {
+        for ( var idx in obj_des ) {
+            if ( "undefined" !== typeof obj_src && obj_src[idx] ) {
+                if ( "object" === typeof obj_des[idx] && "object" === typeof obj_src[idx] ) {
+                    exports.extend( obj_des[idx], obj_src[idx] );
                 } else {
-                    obj_src[idx] = obj_des[idx];
+                    obj_des[idx] = obj_src[idx];
                 }
             }
         }
     }
 
-    return obj_src;
+    return obj_des;
 }
 
+exports.extending = function( obj_des, obj_src ) {
+    var _res = {};
+
+    exports.merged( _res, obj_des );
+
+    for ( var idx in _res ) {
+        if ( "undefined" !== typeof obj_src && obj_src[idx] ) {
+            if ( "object" === typeof _res[idx] && "object" === typeof obj_src[idx] ) {
+                _res[idx] = exports.extending( _res[idx], obj_src[idx] );
+            } else {
+                _res[idx] = obj_src[idx];
+            }
+        }
+    }
+
+    return _res;
+}
 
 /**
  * merge both object into once.
@@ -218,15 +235,24 @@ exports.extend = function( obj_src, obj_des ) {
 
 exports.merging = function( obj_first, obj_last ) {
     var _res = {};
-    if ( obj_first instanceof Object ) {
+
+    if ( "object" === typeof obj_first ) {
         for ( var idx in obj_first ) {
-            _res[idx] = obj_first[idx];
+            if ( "object" === typeof obj_first[idx] ) {
+                _res[idx] = exports.merging( {}, obj_first[idx] );
+            } else {
+                _res[idx] = obj_first[idx];
+            }
         }
     }
 
-    if ( obj_last instanceof Object ) {
+    if ( "object" === typeof obj_last ) {
         for ( var idx in obj_last ) {
-            _res[idx] = obj_last[idx];
+            if ( "object" === typeof obj_last[idx] ) {
+                _res[idx] = exports.merging( {}, obj_last[idx] );
+            } else {
+                _res[idx] = obj_last[idx];
+            }
         }
     }
 
@@ -240,9 +266,13 @@ exports.merging = function( obj_first, obj_last ) {
 
 exports.merged = function( obj_des, obj_src ) {
 
-    if ( obj_src instanceof Object && obj_des instanceof Object ) {
+    if ( "object" === typeof obj_des && "object" === typeof obj_src ) {
         for ( var idx in obj_src ) {
-            obj_des[idx] = obj_src[idx];
+            if ( "object" === typeof obj_des[idx] && "object" === typeof obj_src[idx] ) {
+                exports.merged( obj_des[idx], obj_src[idx] );
+            } else {
+                obj_des[idx] = obj_src[idx];
+            }
         }
     }
 
@@ -256,9 +286,9 @@ exports.merged = function( obj_des, obj_src ) {
 
 exports.deepsEqual = function ( obj_first, obj_last, expression ) {
     
-    if ( typeof obj_first == 'object' && typeof obj_last == 'object' ) {
+    if ( typeof obj_first === 'object' && typeof obj_last === 'object' ) {
         for ( var idx in obj_first ) {
-            if ( typeof obj_first[idx] == 'object' ) {
+            if ( typeof obj_first[idx] === 'object' ) {
                 if ( ! exports.deepsEqual( obj_first[idx], obj_last[idx] ) ) {
                     return false;
                 }

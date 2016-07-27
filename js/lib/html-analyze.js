@@ -49,6 +49,20 @@ node.prototype = {
     hasChildNodes : function() {
         return this.childNodes && this.childNodes.length > 0;
     },
+
+    iterator : function( callback ) {
+        if ( typeof callback !== "function" ) {
+            return;
+        }
+        if ( callback.call( this ) ) {
+            return;
+        }
+        if ( this.hasChildNodes() ) {
+            for ( var _idx = 0; _idx < this.childNodes.length; _idx++ ) {
+                this.childNodes[_idx].iterator( callback );
+            }
+        }
+    },
 };
 
 /**

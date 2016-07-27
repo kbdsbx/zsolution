@@ -58,6 +58,10 @@ function test_html_analyze () {
     test_html_analyze.test_attribute( _ana );
 
     test_html_analyze.test_node( _ana );
+
+    test_html_analyze.test_iterator( _ana );
+
+    console.log( 'html analyze tested successfully.' );
 }
 
 test_html_analyze.__proto__ = {
@@ -730,6 +734,38 @@ test_html_analyze.__proto__ = {
         assert.ok( output[0].hasChildNodes );
 
         assert.ok( ! output[0].hasChildNodes() );
+    },
+
+    test_iterator : function ( ana ) {
+        var str_stream = ana.load_by_string( '<div><div><a></a><b></b><i></i></div></div>' );
+        var output = ana.parse( str_stream );
+
+        var idx = 0;
+
+        output[0].iterator( () => {
+            idx++;
+        } );
+
+        assert.equal( idx, 5 );
+
+        idx = 0;
+
+        output[0].iterator( function() {
+            if ( this.tagName == 'div' ) {
+                idx++;
+            }
+        } );
+
+        assert.equal( idx, 2 );
+
+        idx = 0;
+
+        output[0].iterator( () => {
+            idx++;
+            return 1;
+        } );
+
+        assert.equal( idx, 1 );
     }
 };
 
