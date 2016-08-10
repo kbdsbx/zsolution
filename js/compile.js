@@ -42,6 +42,7 @@ compile.__proto__ = {
         name: '',
         output_path: '',
         compress: false,
+        dev: false,
     },
 
     _each : function( path, old_folder, callback ) {
@@ -107,7 +108,14 @@ compile.__proto__ = {
                     case '.html':
                     case '.shtml':
                         if ( compile.options.dev ) {
-                            require( __dirname + '/assert/html2.js' ).compile( info, compile.options, compile.solution );
+                            var opt = {
+                                path: info.path,
+                                base_path : compile.solution.path,
+                                new_base_path : compile.solution.output_path,
+                                compress: compile.options.compress,
+                            }
+                            var cp_html = require( __dirname + '/assert-dev/html.js' );
+                            cp_html.compile( opt );
                         } else {
                             require( __dirname + '/assert/html.js' ).compile( info, compile.options, compile.solution );
                         }
@@ -120,7 +128,16 @@ compile.__proto__ = {
                         break;
 
                     case '.json':
-                        require( __dirname + '/assert/json.js' ).compile( info, compile.options, compile.solution );
+                        if ( compile.options.dev ) {
+                            var opt = {
+                                path: info.path,
+                                new_path : info.new_path,
+                            };
+                            var cp_json = require( __dirname + '/assert-dev/text.js' );
+                            cp_json.compile( opt );
+                        } else {
+                            require( __dirname + '/assert/json.js' ).compile( info, compile.options, compile.solution );
+                        }
                         break;
 
                     case '.jpg':
@@ -131,7 +148,17 @@ compile.__proto__ = {
                         if ( ( ! compile.options.absolute ) && old_hash !== null && info.hash == old_hash ) {
                             return true;
                         }
-                        require( __dirname + '/assert/image.js' ).compile( info, compile.options, compile.solution );
+
+                        if ( compile.options.dev ) {
+                            var opt = {
+                                path: info.path,
+                                new_path : info.new_path,
+                            };
+                            var cp_img = require( __dirname + '/assert-dev/binary.js' );
+                            cp_img.compile( opt );
+                        } else {
+                            require( __dirname + '/assert/image.js' ).compile( info, compile.options, compile.solution );
+                        }
                         break;
 
                     case '.otf':
@@ -142,7 +169,17 @@ compile.__proto__ = {
                         if ( ( ! compile.options.absolute ) && old_hash !== null && info.hash == old_hash ) {
                             return true;
                         }
-                        require( __dirname + '/assert/font.js' ).compile( info, compile.options, compile.solution );
+                        
+                        if ( compile.options.dev ) {
+                            var opt = {
+                                path: info.path,
+                                new_path : info.new_path,
+                            };
+                            var cp_font = require( __dirname + '/assert-dev/binary.js' );
+                            cp_font.compile( opt );
+                        } else {
+                            require( __dirname + '/assert/font.js' ).compile( info, compile.options, compile.solution );
+                        }
                     default :
                         return true;
                 }

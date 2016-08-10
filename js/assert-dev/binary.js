@@ -24,7 +24,6 @@ binary_compile.prototype = {
     options : {
         path : null,
         new_path : null,
-        compress : false,
     },
 
     compile : function ( callback ) {
@@ -37,8 +36,6 @@ binary_compile.prototype = {
         } else {
             return;
         }
-
-        // TODO : if compression is setting
 
         fs.readFile( _self.options.path, 'binary', ( err, contents ) => {
             if ( err ) {

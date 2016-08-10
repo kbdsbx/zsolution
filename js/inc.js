@@ -198,7 +198,7 @@ exports.rmdir = function( path, deep ) {
 exports.extend = function( obj_des, obj_src ) {
     if ( "object" === typeof obj_des ) {
         for ( var idx in obj_des ) {
-            if ( "undefined" !== typeof obj_src && obj_src[idx] ) {
+            if ( "undefined" !== typeof obj_src && undefined !== obj_src[idx] ) {
                 if ( "object" === typeof obj_des[idx] && "object" === typeof obj_src[idx] ) {
                     exports.extend( obj_des[idx], obj_src[idx] );
                 } else {
@@ -212,12 +212,10 @@ exports.extend = function( obj_des, obj_src ) {
 }
 
 exports.extending = function( obj_des, obj_src ) {
-    var _res = {};
-
-    exports.merged( _res, obj_des );
+    var _res = exports.merging( {}, obj_des );
 
     for ( var idx in _res ) {
-        if ( "undefined" !== typeof obj_src && obj_src[idx] ) {
+        if ( "undefined" !== typeof obj_src && undefined !== obj_src[idx] ) {
             if ( "object" === typeof _res[idx] && "object" === typeof obj_src[idx] ) {
                 _res[idx] = exports.extending( _res[idx], obj_src[idx] );
             } else {
@@ -238,7 +236,7 @@ exports.merging = function( obj_first, obj_last ) {
 
     if ( "object" === typeof obj_first ) {
         for ( var idx in obj_first ) {
-            if ( "object" === typeof obj_first[idx] ) {
+            if ( "object" === typeof obj_first[idx] && null !== obj_first[idx] ) {
                 _res[idx] = exports.merging( {}, obj_first[idx] );
             } else {
                 _res[idx] = obj_first[idx];
@@ -248,7 +246,7 @@ exports.merging = function( obj_first, obj_last ) {
 
     if ( "object" === typeof obj_last ) {
         for ( var idx in obj_last ) {
-            if ( "object" === typeof obj_last[idx] ) {
+            if ( "object" === typeof obj_last[idx] && null !== obj_last[idx] ) {
                 _res[idx] = exports.merging( {}, obj_last[idx] );
             } else {
                 _res[idx] = obj_last[idx];

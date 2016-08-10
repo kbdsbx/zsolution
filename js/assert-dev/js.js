@@ -30,7 +30,7 @@ js_compile.prototype = {
 
     compile : function( callback ) {
         var _self = this;
-         _self.options.path = path.normalize( _self.options.path );
+        _self.options.path = path.normalize( _self.options.path );
         _self.options.new_path = path.normalize( _self.options.new_path );
 
         if ( js_compile._catch.indexOf( _self.options.path ) === -1 ) {

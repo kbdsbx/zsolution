@@ -26,7 +26,6 @@ less_compile.prototype = {
     options : {
         path : null,
         new_path : null,
-        base_path : null,
         compress : false,
         map : false,
     },
@@ -49,7 +48,7 @@ less_compile.prototype = {
             }
 
             less.render( contents, {
-                paths : [ '.', _self.options.base_path ],
+                paths : [ '.' ],
                 filename : _self.options.path,
                 compress : _self.options.compress,
                 sourceMap : {},

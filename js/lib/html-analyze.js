@@ -15,7 +15,9 @@ function html_analyze ( opt ) {
  * Base node;
  */
 
-function node() {
+function node( parent ) {
+    this.parentNode = parent || null;
+
     return this;
 }
 
@@ -44,6 +46,8 @@ node.prototype = {
     // null for any other node.
     nodeValue: null,
 
+    parentNode: null,
+
     childNodes: [],
 
     hasChildNodes : function() {
@@ -54,15 +58,51 @@ node.prototype = {
         if ( typeof callback !== "function" ) {
             return;
         }
-        if ( callback.call( this ) ) {
+        if ( true === callback.call( this ) ) {
             return;
         }
         if ( this.hasChildNodes() ) {
-            for ( var _idx = 0; _idx < this.childNodes.length; _idx++ ) {
-                this.childNodes[_idx].iterator( callback );
+            var _cp_cn = [];
+            // save as duplicate.
+            for ( var _idx in this.childNodes ) {
+                _cp_cn[_idx] = this.childNodes[_idx];
+            }
+            _cp_cn.forEach( function( n, idx, ns ) {
+                n.iterator( callback );
+            } );
+        }
+    },
+
+    // TODO: The insertBefore(node, child) method must return the result of pre-inserting node into the context object before child.
+    insertBefore : function( node, child ) {
+        for ( var idx in this.childNodes ) {
+            if ( child === this.childNodes[idx] ) {
+                node.parentNode = this;
+                this.childNodes.splice( idx, 0, node );
+                return;
             }
         }
     },
+
+    // TODO: The appendChild(node) method must return the result of appending node to the context object.
+    appendChild : function( node ) {
+        node.parentNode = this;
+        this.childNodes.push( node );
+    },
+
+    replaceChild : function( node, child ) {
+        // TODO;
+    },
+
+    // TODO: The removeChild(child) method must return the result of pre-removing child from the context object.
+    removeChild( node ) {
+        for ( var idx in this.childNodes ) {
+            if ( node === this.childNodes[idx] ) {
+                delete this.childNodes[idx];
+                return;
+            }
+        }
+    }
 };
 
 /**
@@ -369,7 +409,7 @@ html_analyze.prototype = {
     /**
      * node start
      */
-    _node_start : function( stm ) {
+    _node_start : function( stm, parent ) {
         var _nodes = [];
         var _node = null;
         var next = null;
@@ -396,7 +436,7 @@ html_analyze.prototype = {
                 } else {
                     this._unshift( stm, _n );
                 }
-                _node = new node();
+                _node = new node( parent );
                 if ( null == this._tag_start( stm, _node ) ) {
                     _nodes.push( _node );
                     _node = null;
@@ -451,10 +491,10 @@ html_analyze.prototype = {
                     if ( this._void_elements.indexOf( _node.nodeName ) != -1 ) {
                         return;
                     } else if ( this._raw_text_elements.indexOf( _node.tagName ) != -1 ) {
-                        _node.nodeValue = this._text_value_start( stm, node );
+                        _node.nodeValue = this._text_value_start( stm, _node );
                     } else {
                         // recursive into child node
-                        _node.childNodes = this._node_start( stm );
+                        _node.childNodes = this._node_start( stm, _node );
                     }
                     return _node;
                 }
@@ -598,13 +638,30 @@ html_analyze.prototype = {
     },
 
     _text_value_start : function ( stm, node ) {
-        var next = this._do_while( stm, "<" );
+        var chunk = '';
+        var next;
 
+        while ( next = this._do_while( stm, "<" ) ) {
+            var _n = stm.read( 2 + node.nodeName.length );
+            if ( _n === ( '/' + node.nodeName + '>' ) ) {
+                chunk += next.chunk;
+                node.nodeValue = chunk;
+                this._unshift( stm, next.data + _n );
+                return chunk;
+            } else {
+                chunk += next.chunk;
+                chunk += next.data;
+                chunk += _n;
+            }
+        }
+
+        /*
         if ( next ) {
             node.nodeValue = next.chunk;
             this._unshift( stm, next.data );
             return next.chunk;
         }
+        */
 
         return null;
     },
@@ -711,7 +768,7 @@ html_analyze.prototype = {
         var _name = node.name.toLowerCase();
         var _publicId = node.publicId ? ` "${node.publicId}"` : "";
         var _systemId = node.systemId ? ` "${node.systemId}"` : "";
-        var _fpi = _systemId ? _publicId ? " PUBLIC" : " SYSTEM" : "";
+        var _fpi = _systemId !== "" ? ( _publicId !== "" ? " PUBLIC" : " SYSTEM" ) : "";
         return `${indent}<!DOCTYPE ${_name}${_fpi}${_publicId}${_systemId}>${this.options.replacer}`;
     },
 
