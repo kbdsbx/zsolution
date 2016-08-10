@@ -4,51 +4,48 @@ const fs = require( 'fs' );
 const path = require( 'path' );
 const $ = require( __dirname + '/../inc.js' );
 
-exports = module.exports = css_compile;
+exports = module.exports = binary_compile;
 
-function css_compile( options ) {
+function binary_compile ( options ) {
     this.options = $.extending( this.options, options );
     return this;
 }
 
-css_compile.__proto__ = {
+binary_compile.__proto__ = {
     _catch : [],
 
-    compile: function( options, callback ) {
-        var _self = new css_compile( options );
+    compile : function( options, callback ) {
+        var _self = new binary_compile( options );
         return _self.compile( callback );
     }
 }
 
-css_compile.prototype = {
+binary_compile.prototype = {
     options : {
         path : null,
         new_path : null,
-        compress : false,
     },
 
-    compile : function( callback ) {
+    compile : function ( callback ) {
         var _self = this;
         _self.options.path = path.normalize( _self.options.path );
         _self.options.new_path = path.normalize( _self.options.new_path );
 
-        if ( css_compile._catch.indexOf( _self.options.path ) === -1 ) {
-            css_compile._catch.push( _self.options.path );
+        if ( binary_compile._catch.indexOf( _self.options.path ) === -1 ) {
+            binary_compile._catch.push( _self.options.path );
         } else {
             return;
         }
 
-        // TODO: if compression is setting
-
-        fs.readFile( _self.options.path, 'utf8', ( err, contents ) => {
+        fs.readFile( _self.options.path, 'binary', ( err, contents ) => {
             if ( err ) {
                 console.error( err );
                 return;
             }
 
-            fs.writeFile( _self.options.new_path, contents, { encoding: 'utf8', flag: "w+" }, ( err ) => {
+            fs.writeFile( _self.options.new_path, contents, { encoding: 'binary', flag: 'w+' }, ( err ) => {
                 if ( err ) {
-                    console.log( err );
+                    console.error( err );
                     return;
                 }
 
@@ -61,4 +58,6 @@ css_compile.prototype = {
         } );
     }
 }
+
+
 

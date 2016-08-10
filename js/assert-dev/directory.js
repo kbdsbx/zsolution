@@ -32,9 +32,9 @@ directory_compile.prototype = {
 
         // filtering empty directory.
         if ( _self.options.compress ) {
-            if ( ! fs.existsSync( _self.options.new_path ) || fs.readdirSync( _self.options.path ).length === 0 ) {
+            if ( ! fs.existsSync( _self.options.path ) || fs.readdirSync( _self.options.path ).length === 0 ) {
                 if ( callback ) {
-                    callback.call( _self.options.new_path );
+                    callback.call( _self.options.path );
                 }
                 return;
             }

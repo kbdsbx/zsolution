@@ -42,6 +42,7 @@ compile.__proto__ = {
         name: '',
         output_path: '',
         compress: false,
+        absolute: false,
         dev: false,
     },
 
@@ -91,9 +92,17 @@ compile.__proto__ = {
                 }
             }
 
+            // developing folder
+            var _dev = compile.options.dev ? "-dev" : "";
+
             if ( info.isDirectory ) {
                 info.new_path = info.path.replace( compile.solution.path, compile.options.output_path );
-                require( __dirname + '/assert/directory.js' ).compile( info, compile.options );
+                var opt = {
+                    path : info.path,
+                    new_path : info.new_path,
+                    compress : compile.options.compress,
+                };
+                require( __dirname + `/assert${_dev}/directory.js` ).compile( opt );
             }
 
             if ( info.isFile ) {
@@ -107,37 +116,47 @@ compile.__proto__ = {
                     case '.htm':
                     case '.html':
                     case '.shtml':
-                        if ( compile.options.dev ) {
-                            var opt = {
-                                path: info.path,
-                                base_path : compile.solution.path,
-                                new_base_path : compile.solution.output_path,
-                                compress: compile.options.compress,
-                            }
-                            var cp_html = require( __dirname + '/assert-dev/html.js' );
-                            cp_html.compile( opt );
-                        } else {
-                            require( __dirname + '/assert/html.js' ).compile( info, compile.options, compile.solution );
-                        }
+                        var opt = {
+                            path: info.path,
+                            base_path : compile.solution.path,
+                            new_base_path : compile.solution.output_path,
+                            compress: compile.options.compress,
+                        };
+                        require( __dirname + `/assert${_dev}/html.js` ).compile( opt );
                         break;
 
                     case '.css':
+                        if ( compile.options.absolute ) {
+                            var opt = {
+                                path : info.path,
+                                new_path : info.new_path,
+                                compress : compile.options.compress,
+                            };
+                            require( __dirname + `/assert${_dev}/css.js` ).compile( opt );
+                        }
                         break;
 
                     case '.js':
+                        if ( compile.options.absolute ) {
+                            var opt = {
+                                path : info.path,
+                                new_path : info.new_path,
+                                compress : compile.options.compress,
+                            };
+                            require( __dirname + `/assert${_dev}/js.js` ).compile( opt );
+                        }
                         break;
 
                     case '.json':
-                        if ( compile.options.dev ) {
-                            var opt = {
-                                path: info.path,
-                                new_path : info.new_path,
-                            };
-                            var cp_json = require( __dirname + '/assert-dev/text.js' );
-                            cp_json.compile( opt );
-                        } else {
-                            require( __dirname + '/assert/json.js' ).compile( info, compile.options, compile.solution );
+                        if ( ( ! compile.options.absolute ) && old_hash !== null && info.hash == old_hash ) {
+                            return true;
                         }
+
+                        var opt = {
+                            path: info.path,
+                            new_path : info.new_path,
+                        };
+                        require( __dirname + `/assert${_dev}/text.js` ).compile( opt );
                         break;
 
                     case '.jpg':
@@ -149,16 +168,11 @@ compile.__proto__ = {
                             return true;
                         }
 
-                        if ( compile.options.dev ) {
-                            var opt = {
-                                path: info.path,
-                                new_path : info.new_path,
-                            };
-                            var cp_img = require( __dirname + '/assert-dev/binary.js' );
-                            cp_img.compile( opt );
-                        } else {
-                            require( __dirname + '/assert/image.js' ).compile( info, compile.options, compile.solution );
-                        }
+                        var opt = {
+                            path: info.path,
+                            new_path : info.new_path,
+                        };
+                        require( __dirname + `/assert${_dev}/binary.js` ).compile( opt );
                         break;
 
                     case '.otf':
@@ -170,16 +184,11 @@ compile.__proto__ = {
                             return true;
                         }
                         
-                        if ( compile.options.dev ) {
-                            var opt = {
-                                path: info.path,
-                                new_path : info.new_path,
-                            };
-                            var cp_font = require( __dirname + '/assert-dev/binary.js' );
-                            cp_font.compile( opt );
-                        } else {
-                            require( __dirname + '/assert/font.js' ).compile( info, compile.options, compile.solution );
-                        }
+                        var opt = {
+                            path: info.path,
+                            new_path : info.new_path,
+                        };
+                        require( __dirname + `/assert${_dev}/binary.js` ).compile( opt );
                     default :
                         return true;
                 }

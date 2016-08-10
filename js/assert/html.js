@@ -1,202 +1,238 @@
 "use strict"
 
-const tools = require( __dirname + "/../inc.js" );
-const path = require( 'path' );
+const path = require ( 'path' )
 const fs = require( 'fs' );
 const crypto = require( 'crypto' );
-const util = require( 'util' );
-const beautify_html = require( 'js-beautify' ).html;
+const util =  require( 'util' );
+const $ = require( __dirname + "/../inc.js" );
+var html_analyze = require( __dirname + "/../lib/html-analyze.js" );
 
-var options = {};
-var solution = {};
+exports = module.exports = html;
 
-/**
- * info = {
- *     path,        // absolute path
- *     new_path,    // absolute path
- *     isDirectory, // bool
- *     isFile,      // bool
- *     dir,
- *     root,
- *     ext,         // including '.'
- *     name,
- *     size,        // byte
- *     accessed_time,
- *     modified_time,
- *     changed_time,
- *     created_time,
- * }
- */
-exports.compile = function( info, opt, sol ) {
-    options = opt;
-    solution = sol;
+function html( options ) {
+    this.options = $.extending( this.options, options );
+    this.analyze = new html_analyze();
 
-    fs.readFile( info.path, "utf8", ( err, contents ) => {
-        if ( err ) { console.log( err ); return; }
+    return this;
+}
 
-        let result = contents;
+html.__proto__ = {
+    compile : function( options, callback ) {
+        var _ana = new html( options );
+        _ana.compile( callback );
+    },
 
-        result = css_move( result, info.dir, solution );
+    compileSync : function( options ) {
+        var _ana = new html( options );
+        return _ana.compileSync();
+    },
+}
 
-        result = js_move( result, info.dir, solution );
+html.prototype = {
+    options : {
+        path : '',
+        base_path : '',
+        new_base_path : '',
+        compress : false, // the next version.
+        output : true,
+    },
+    analyze_option : {
+        replacer : '\n',
+        space : '    ',
+    },
+    analyze : null,
 
-        result = less_compile( result, info.dir, solution );
+    compile : function ( callback ) {
+        var _self = this;
+        _self.options.path = path.normalize( _self.options.path );
+        _self.options.base_path = path.normalize( _self.options.base_path );
+        _self.options.new_base_path = path.normalize( _self.options.new_base_path );
 
-        result = import_compile( result, info.dir, solution );
+        var _sm = _self.analyze.load_by_file( _self.options.path );
 
-        fs.writeFile( info.new_path, beautify_html( result ), { flag: 'w+' }, ( err ) => {
-            if ( err ) { console.log( err ); return; }
+        _sm.on( 'readable', function() {
+            var op;
+            try {
+                op = _self.analyze.parse( _sm );
+                console.error( _self.options.path );
+            } catch ( err ) {
+                if ( "string" === typeof err ) {
+                    err = `\n${err}\nform:\n\t${_self.options.path}`;
+                }
+                throw err;
+            }
 
-            console.log( info.new_path + ' compiled.' );
+            for ( var _idx in op ) {
+                op[_idx].iterator( function() {
+                    if ( this.tagName === 'link' && this.getAttribute( 'rel' ) === 'stylesheet/less' ) {
+                        _self.less_compile( this );
+                    } else if ( this.tagName === 'link' && this.getAttribute( 'rel' ) === 'import' ) {
+                        _self.import_compile( this );
+                        return true;
+                    } else if ( this.tagName === 'link' && ( this.getAttribute( 'rel' ) === 'stylesheet' || /\.css$/i.test( this.getAttribute( 'href' ) ) ) ) {
+                        _self.css_move( this );
+                    } else if ( this.tagName === 'script' && this.getAttribute( 'src' ) != null ) {
+                        _self.js_move( this );
+                    }
+                } );
+            }
+
+            if ( _self.options.output ) {
+                var _new_path = _self.options.path.replace( _self.options.base_path, _self.options.new_base_path );
+                fs.writeFile( _new_path , _self.analyze.stringify( op, _self.analyze_option ), { flag: 'w+', encoding: 'utf8' }, function( err ) {
+                    if ( err ) {
+                        console.error( err );
+                        return;
+                    }
+
+                    console.log( _new_path + ' compiled.' );
+                } );
+            }
+
+            if ( "function" === typeof callback ) {
+                callback( op );
+            }
         } );
-    } );
-}
+    },
 
-/**
- * less
- */
-var less_compile = function( contents, dir, solution ) {
-    let result = contents;
+    compileSync : function() {
+        var _self = this;
+        _self.options.path = path.normalize( _self.options.path );
+        _self.options.base_path = path.normalize( _self.options.base_path );
+        _self.options.new_base_path = path.normalize( _self.options.new_base_path );
 
-    var less_pattern = /<link.+?href=['|"](.*?\.less\??[^\/^\?]*?)['|"].*?>/g;
-    var less_js_pattern = /<script.+?src=['|"].*?\/less\.(min\.)?js[^'^"]*?['|"][^>]*?>.*?<\/script>/g
-    
-    let less_match;
-    while ( ( less_match = less_pattern.exec( contents ) ) !== null ) {
-        if ( less_match[1] ) {
-            let less_file_path = path.normalize( path.isAbsolute( less_match[1] ) ? solution.path + less_match[1] : dir + '/' + less_match[1] );
-            let less_info = tools.get_info( less_file_path );
+        var _sm = _self.analyze.load_by_string( fs.readFileSync( _self.options.path ) );
 
-            if ( ! less_info ) {
-                continue;
-            }
+        var op = _self.analyze.parse( _sm );
 
-            let sha256 = less_info.hash;
-
-            let old_sha = tools.xpath( solution.new_folder, path.relative( solution.path, less_file_path ) );
-
-            if ( ( ! options.absolute ) && old_sha != sha256 || old_sha === null ) {
-                require( './less.js' ).compile( less_info, options );
-            }
-
-            less_info.new_path = less_info.path
-                .replace( solution.path, solution.output_path )
-                .replace( /\.less$/g, '.css' );
-
-            let less_link = less_match[0]
-                .replace( /\.less/g, '.css' )
-                .replace( /stylesheet\/less/i, 'stylesheet' );
-
-            result = result.replace( less_match[0], less_link );
+        for ( var _idx = 0; _idx < op.length; _idx++ ) {
+            op[_idx].iterator( function() {
+                if ( this.tagName === 'link' && this.getAttribute( 'rel' ) === 'stylesheet/less' ) {
+                    _self.less_compile( this );
+                } else if ( this.tagName === 'link' && this.getAttribute( 'rel' ) === 'import' ) {
+                    _self.import_compile( this );
+                    return true;
+                } else if ( this.tagName === 'link' && ( this.getAttribute( 'rel' ) === 'stylesheet' || /\.css$/i.test( this.getAttribute( 'href' ) ) ) ) {
+                    _self.css_move( this );
+                } else if ( this.tagName === 'script' && this.getAttribute( 'src' ) != null ) {
+                    _self.js_move( this );
+                }
+            } );
         }
-    }
 
-    result = result.replace( less_js_pattern, '' )
+        if ( _self.options.output ) {
+            var _new_path = _self.options.path.replace( _self.options.base_path, _self.options.new_base_path );
+            fs.writeFile( _new_path , this.analyze.stringify( op ), { flag: 'w+', encoding: 'utf8' }, function( err ) {
+                if ( err ) {
+                    console.error( err );
+                    return;
+                }
 
-    return result;
-}
-
-/**
- * link[rel="import"]
- */
-var import_compile = function( contents, dir, solution ) {
-    let result = contents;
-
-    var import_pattern = /<link.+?rel=['|"]import['|"].*?>/g;
-    var import_js_pattern = /<script.+?src=['|"].*?\/import\.(min\.)?js[^'^"]*?['|"][^>]*?>.*?<\/script>/g
-
-    let import_match;
-    while( ( import_match = import_pattern.exec( contents ) ) != null ) {
-        let import_href = /href=['|"](.+?)['|"]/i.exec( import_match[0] );
-
-        if ( import_href[1] ) {
-            let import_file_path = path.normalize( path.isAbsolute( import_href[1] ) ? solution.path + less_match[1] : dir + '/' + import_href[1] );
-            let import_file_info = tools.get_info( import_file_path );
-            let sha256 = tools.sha256( import_file_info.changed_time.toString() ).substr( 32 );
-
-            let import_content = fs.readFileSync( import_file_path );
-
-            import_content = util.format( "<!-- [%s] v.[%s] -->", import_href[1], sha256 ) + import_content + util.format( "<!-- #[%s] -->", import_href[1] );
-
-            // compile recursive
-            import_content = import_compile( import_content, import_file_info.dir );
-
-            result = result.replace( import_match[0], import_content );
+                console.log( _new_path + ' compiled.' );
+            } );
         }
-    }
 
-    result = result.replace( import_js_pattern, '' )
+        return op;
+    },
 
-    return result;
-}
-
-/**
- * js file
- */
-var js_move = function( contents, dir, solution ) {
-    let result = contents;
-
-    let js_pattern = /<script.+?src=['|"](.+?)['|"][^>]*?>.*?<\/script>/g;
-    let js_match;
-
-    while ( ( js_match = js_pattern.exec( contents ) ) != null ) {
-        if ( js_match[1] && ( ! /^(https?|ftp|cdn)/i.test( js_match[1] ) ) ) {
-            let js_path = path.normalize( path.isAbsolute( js_match[1] ) ? solution.path + js_match[1] : dir + '/' + js_match[1] );
-
-            if ( ! fs.existsSync( js_path ) ) {
-                continue;
-            }
-
-            let js_info = tools.get_info( js_path );
-            let js_sha256 = tools.sha256_file( js_path );
-
-            js_info.new_path = js_info.path
-                .replace( solution.path, solution.output_path );
-
-            require( './js.js' ).compile( js_info, options );
-
-            let js_src = js_match[1]
-                .replace( /\.js/g, '.js' );
-
-            result = result.replace( js_match[1], js_src );
+    get_file_path : function( href ) {
+        if ( /^(:?https?|ftp)?:?\/\//i.test( href ) ) {
+            return href;
+        } else {
+            return path.normalize( path.isAbsolute( href ) ? this.options.base_path + '/' + href : path.dirname( this.options.path ) + '/' + href );
         }
-    }
+    },
 
-    return result;
-}
+    // less file compiling
+    less_compile : function( less_node ) {
+        var href = less_node.getAttribute( 'href' );
+        var less_file_path = this.get_file_path( href );
+        var less_info = $.get_info( less_file_path );
 
-/**
- * css file
- */
-var css_move = function( contents, dir, solution ) {
-    let result = contents;
-
-    let css_pattern = /<link.+?href=['|"](.*?\.css\??[^\/^\?]*?)['|"].*?>/g;
-    let css_match;
-
-    while ( ( css_match = css_pattern.exec( contents ) ) != null ) {
-        if ( css_match[1] ) {
-            let css_path = path.normalize( path.isAbsolute( css_match[1] ) ? solution.path + css_match[1] : dir + '/' + css_match[1] );
-
-            if ( ! fs.existsSync( css_path ) ) {
-                continue;
-            }
-
-            let css_info = tools.get_info( css_path );
-            let css_sha256 = tools.sha256_file( css_path );
-
-            css_info.new_path = css_info.path
-                .replace( solution.path, solution.output_path );
-
-            require( './css.js' ).compile( css_info, options );
-
-            let css_src = css_match[1]
-                .replace( /\.css/g, '.css' );
-
-            result = result.replace( css_match[1], css_src );
+        if ( ! less_info ) {
+            return;
         }
-    }
 
-    return result;
-}
+        var _opt = {
+            path : less_file_path,
+            new_path : less_file_path.replace( this.options.base_path, this.options.new_base_path ).replace( /\.less$/g, '.css' ),
+            compress : this.options.compress,
+            map : ! this.options.compress,
+        };
+
+        require( __dirname + '/less.js' ).compile( _opt );
+
+        less_node.setAttribute( 'rel', 'stylesheet' );
+        less_node.setAttribute( 'href', less_node.getAttribute( 'href' ).replace( /\.less/g, '.css?guid=' + less_info.hash + '&' ) );
+    },
+
+    // compiling outside components.
+    import_compile : function ( import_node ) {
+        var href = import_node.getAttribute( 'href' );
+        var import_file_path = this.get_file_path( href );
+        var import_info = $.get_info( import_file_path );
+
+        if ( ! import_info ) {
+            return;
+        }
+
+        var _opt = {
+            path : import_file_path,
+            base_path : this.options.base_path,
+            new_base_path : this.options.new_base_path,
+            compress : this.options.compress,
+            output: false,
+        };
+
+        var _comp = html.compileSync( _opt );
+
+        for ( var idx in _comp ) {
+            import_node.parentNode.insertBefore( _comp[idx], import_node );
+        }
+
+        import_node.parentNode.removeChild( import_node );
+    },
+
+    // js source changing
+    js_move : function ( js_node ) {
+        var src = js_node.getAttribute( 'src' );
+        var js_file_path = this.get_file_path( src );
+        var js_info = $.get_info( js_file_path );
+
+        if ( ! js_info ) {
+            return;
+        }
+
+        var _opt = {
+            path: js_file_path,
+            new_path : js_file_path.replace( this.options.base_path, this.options.new_base_path ),
+            compress : this.options.compress,
+        }
+
+        require( __dirname + '/js.js' ).compile( _opt );
+
+        js_node.setAttribute( 'src', src.replace( /\.js/g, '.js?guid=' + js_info.hash + '&' ) );
+    },
+
+    // css href changing
+    css_move : function ( css_node ) {
+        var href = css_node.getAttribute( 'href' );
+        var css_file_path = this.get_file_path( href );
+        var css_info = $.get_info( css_file_path );
+
+        if ( ! css_info ) {
+            return;
+        }
+
+        var _opt = {
+            path: css_file_path,
+            new_path : css_file_path.replace( this.options.base_path, this.options.new_base_path ),
+            compress : this.options.compress,
+        }
+
+        require( __dirname + '/css.js' ).compile( _opt );
+
+        css_node.setAttribute( 'href', href.replace( /\.css/g, '.css?guid=' + css_info.hash + '&' ) );
+    },
+};
 
