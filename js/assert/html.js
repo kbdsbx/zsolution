@@ -7,28 +7,28 @@ const util =  require( 'util' );
 const $ = require( __dirname + "/../inc.js" );
 var html_analyze = require( __dirname + "/../lib/html-analyze.js" );
 
-exports = module.exports = html;
+exports = module.exports = html_compile;
 
-function html( options ) {
+function html_compile( options ) {
     this.options = $.extending( this.options, options );
     this.analyze = new html_analyze();
 
     return this;
 }
 
-html.__proto__ = {
+html_compile.__proto__ = {
     compile : function( options, callback ) {
-        var _ana = new html( options );
+        var _ana = new html_compile( options );
         _ana.compile( callback );
     },
 
     compileSync : function( options ) {
-        var _ana = new html( options );
+        var _ana = new html_compile( options );
         return _ana.compileSync();
     },
 }
 
-html.prototype = {
+html_compile.prototype = {
     options : {
         path : '',
         base_path : '',
@@ -184,7 +184,7 @@ html.prototype = {
             output: false,
         };
 
-        var _comp = html.compileSync( _opt );
+        var _comp = html_compile.compileSync( _opt );
 
         for ( var idx in _comp ) {
             import_node.parentNode.insertBefore( _comp[idx], import_node );

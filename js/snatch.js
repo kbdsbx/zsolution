@@ -4,7 +4,36 @@ const fs = require( 'fs' );
 const rl = require( 'readline-sync' );
 const util = require( 'util' );
 const url = require( 'url' );
-const tools = require( __dirname + '/inc.js' );
+const $ = require( __dirname + '/inc.js' );
+
+var html_analyze = require( __dirname + "/lib/html-analyze.js" );
+
+exports = module.exports = snatch;
+
+function snatch( options ) {
+    this.options = $.extending( this.options, options );
+    this.analyze = new html_analyze();
+
+    return this;
+}
+
+snatch.__proto__ = {
+    snatch : function( options, callback ) {
+        var _s = new snatch( options );
+        _s.snatch( callback );
+    },
+};
+
+snatch.prototype = {
+    options : {
+        config : "../data/snatch.json",
+        save_path : "",
+        assort : false, // TODO: image analysis [https://cloud.google.com/vision/]
+    },
+
+    snatch : function( callback ) {
+    },
+};
 
 var options = {
     url: null,

@@ -57,6 +57,8 @@ function test_html_analyze () {
 
     test_html_analyze.test_load_by_string( _ana );
 
+    test_html_analyze.test_load_by_network( _ana );
+
     test_html_analyze.test_do_while( _ana );
 
     test_html_analyze.test_load_by_file( _ana );
@@ -742,6 +744,37 @@ test_html_analyze.__proto__ = {
         } );
     },
 
+    test_load_by_file : function ( ana ) {
+        var str_stream = ana.load_by_file( __dirname + '/data/index.html' );
+        var stringify = "";
+
+        str_stream.on( 'readable', function() {
+            var output = ana.parse( str_stream );
+            stringify += ana.stringify( output, {
+                replacer: "\n",
+                space : "\t",
+            } );
+
+        } ).on( 'end', function() {
+            fs.writeFileSync( __dirname + '/data/index-parsed.html', stringify, { flag : "w+" } );
+        } );
+    },
+
+    test_load_by_network : function( ana ) {
+        var str_stream = ana.load_by_network( 'https://www.baidu.com', function( str_stream ) {
+            /*
+            str_stream.on( 'readable', function() {
+                res.pause();
+                console.log( str_stream.read( 6 ) );
+            } );
+            */
+        } );
+        str_stream.on( 'readable', function() {
+            res.pause();
+            console.log( str_stream.read( 6 ) );
+        } );
+    },
+
     test_do_while : function( ana ) {
         var str_stream = ana.load_by_string( '<!DOCTYPE html>' );
         var idx;
@@ -765,22 +798,6 @@ test_html_analyze.__proto__ = {
         idx = ana._do_while( str_stream, "<", "!", " ", ">" );
 
         assert( ! idx );
-    },
-
-    test_load_by_file : function ( ana ) {
-        var str_stream = ana.load_by_file( __dirname + '/data/index.html' );
-        var stringify = "";
-
-        str_stream.on( 'readable', function() {
-            var output = ana.parse( str_stream );
-            stringify += ana.stringify( output, {
-                replacer: "\n",
-                space : "\t",
-            } );
-
-        } ).on( 'end', function() {
-            fs.writeFileSync( __dirname + '/data/index-parsed.html', stringify, { flag : "w+" } );
-        } );
     },
 
     test_attribute : function ( ana ) {
@@ -859,7 +876,7 @@ test_html_analyze.__proto__ = {
             return 1;
         } );
 
-        assert.equal( idx, 1 );
+        assert.equal( idx, 5 );
     },
 
     test_child : function( ana ) {

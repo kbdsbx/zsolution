@@ -4,6 +4,8 @@ const stream = require( 'stream' );
 const buffer = require( 'buffer' );
 const fs = require( 'fs' );
 const $ = require( __dirname + '/../inc.js' );
+const http = require( 'http' );
+const https = require( 'https' );
 
 exports = module.exports = html_analyze;
 
@@ -172,6 +174,16 @@ element.prototype = $.merging( new node(), {
                 delete this.attributes[idx];
             }
         }
+    },
+
+    querySelector : function( str_selectors ) {
+        var _sel = new selector( str_selectors );
+        return _sel.query( this );
+    },
+
+    querySelectorAll : function( str_selectors ) {
+        var _sel = new selector( str_selectors );
+        return _sel.query_all( this );
     }
 } );
 
@@ -279,6 +291,64 @@ function html_analyze_exception ( msg, stack ) {
     return `${msg}\n\tline number: ${stack.line}`;
 }
 
+html_analyze.__proto__ = {
+    /**
+     * @string  text    contents of document.
+     * @return          readable stream.
+     *
+     * load document from string.
+     */
+    load_by_string : function( text ) {
+        var bf = new Buffer( text );
+        var rb = new stream.Readable( {
+            encoding: 'utf8',
+            objectMode: false,
+        } );
+        rb._read = function _read( size ) {
+        };
+
+        rb.pause();
+
+        rb.push( bf );
+
+        return rb;
+    },
+
+    /**
+     * @string  path    file path that will be analysis.
+     * @return          readable stream.
+     *
+     * load document from file.
+     */
+    load_by_file : function( path ) {
+        if ( fs.existsSync ( path ) ) {
+            var rs = fs.createReadStream( path, {
+                encoding: 'utf8',
+            } );
+
+            rs.pause();
+
+            return rs;
+        }
+    },
+
+    /**
+     * @string  url     international url.
+     * @return          readable stream.
+     *
+     * load document from internat.
+     */
+    load_by_network : function ( url, callback ) {
+        let _http = /https:.+?/i.test( url ) ? https : http;
+
+        _http.get( url, ( res ) => {
+            res.setEncoding( 'utf8' );
+            res.pause();
+            callback( res );
+        } );
+    },
+};
+
 
 html_analyze.prototype = {
     options : {
@@ -320,6 +390,18 @@ html_analyze.prototype = {
 
             return rs;
         }
+    },
+
+    load_by_network : function ( url, callback ) {
+        let _http = /https:.+?/i.test( url ) ? https : http;
+
+        var _ct = "";
+
+        return _http.get( url, ( res ) => {
+            res.setEncoding( 'utf8' );
+            res.pause();
+            callback( res );
+        } );
     },
 
     parse : function( stm ) {
@@ -396,9 +478,9 @@ html_analyze.prototype = {
     },
 
     _dom_start : function( stm ) {
-        var next = null;
+        var next;
 
-        while ( next = this._do_while( stm, "\\S" ) ) {
+        if ( next = this._do_while( stm, "\\S" ) ) {
             this._unshift( stm, next.data );
             return this._node_start( stm );
         }
@@ -412,7 +494,7 @@ html_analyze.prototype = {
     _node_start : function( stm, parent ) {
         var _nodes = [];
         var _node = null;
-        var next = null;
+        var next;
 
         while ( next = this._do_while( stm, "<", "[^\\s<]" ) ) {
             if ( next.reg == "<" ) {
@@ -823,3 +905,4 @@ html_analyze.prototype = {
         return _res;
     },
 };
+

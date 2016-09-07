@@ -283,6 +283,47 @@ exports.merged = function( obj_des, obj_src ) {
  */
 
 exports.deepsEqual = function ( obj_first, obj_last, expression ) {
+
+    if ( typeof obj_first === 'object' && typeof obj_last === 'object' ) {
+        if ( obj_first === null ) {
+            return true;
+        }
+        if ( obj_first.length === 0 && obj_last.length === 0 ) {
+            return true;
+        }
+
+        for ( var idx in obj_first ) {
+            if ( typeof obj_first[idx] === 'object' && typeof obj_last[idx] === 'object' ) {
+                if ( ! exports.deepsEqual( obj_first[idx], obj_last[idx], expression ) ) {
+                    return false;
+                }
+            } else if ( typeof expression === 'function' ) {
+                if ( ! expression( obj_first[idx], obj_last[idx] ) ) {
+                    return false;
+                }
+            } else {
+                return obj_first[idx] == obj_last[idx];
+            }
+        }
+
+        /*
+        for ( var idx in obj_last ) {
+            if ( typeof obj_last[idx] === 'object' && typeof obj_first[idx] === 'object' ) {
+                if ( ! exports.deepsEqual( obj_last[idx], obj_first[idx], expression ) ) {
+                    return false;
+                }
+            } else if ( typeof expression === 'function' ) {
+                if ( ! expression( obj_last[idx], obj_first[idx] ) ) {
+                    return false;
+                }
+            } else {
+                return obj_last[idx] == obj_first[idx];
+            }
+        }
+        */
+    }
+
+    return true;
     
     if ( typeof obj_first === 'object' && typeof obj_last === 'object' ) {
         for ( var idx in obj_first ) {
@@ -297,6 +338,23 @@ exports.deepsEqual = function ( obj_first, obj_last, expression ) {
                     }
                 } else {
                     if ( obj_first[idx] != obj_last[idx] ) {
+                        return false;
+                    }
+                }
+            }
+        }
+        for ( var idx in obj_last ) {
+            if ( typeof obj_last[idx] === 'object' ) {
+                if ( ! exports.deepsEqual( obj_last[idx], obj_first[idx] ) ) {
+                    return false;
+                }
+            } else if ( obj_last[idx] != obj_first[idx] ) {
+                if ( typeof expression === 'function' ) {
+                    if ( ! expression( obj_last[idx], obj_first[idx] ) ) {
+                        return false;
+                    }
+                } else {
+                    if ( obj_last[idx] != obj_first[idx] ) {
                         return false;
                     }
                 }
