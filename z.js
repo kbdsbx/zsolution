@@ -46,6 +46,7 @@ program
     .option( '-c, --compress', 'compress js, css or other compressable files.' )
     .option( '-a, --absolute', 'compress absolutly and cover caches.' )
     .option( '-d, --dev', 'using developing module.' )
+    .option( '-s, --strict', 'using strict module.' )
     .action( ( name, obj ) => {
         var opt = {
             name : name,
@@ -53,6 +54,7 @@ program
             compress: obj.compress || false,
             absolute: obj.absolute || false,
             dev : obj.dev || false,
+            strict : obj.strict || false,
         }
 
         var compile = require( __dirname + '/js/compile.js' );
@@ -76,26 +78,21 @@ program
     } );
 
 program
-    .command( 'snatch <url>' )
+    .command( 'snatch <name>' )
     .description( 'snatch images form website.' )
+    .option( '-c, --config <path>', 'configuration file path.' )
     .option( '-s, --save_path <path>', 'image saving path.' )
-    .option( '-d, --depth <depth>', 'searching depth.', parseInt )
-    .option( '-a, --attr <attr>', 'image attribute looks like [src].' )
-    .option( '-l, --level <level>', 'domain level for searching.', parseInt )
-    .option( '-t, --assort <assort>', 'assort by search engine', /^(google|baidu)$/i )
-    .action( ( url, obj ) => {
+    .option( '-t, --assort <assort>', 'assort by search engine.' )
+    .action( ( name, obj ) => {
         var opt = {
-            url: url,
-            domain_level: obj.level,
+            name : name,
+            config : obj.config,
             save_path: obj.save_path,
-            depth: obj.depth,
-            img_attr: obj.attr,
-            assort: obj.assort,
+            assort: obj.assort || false,
         }
 
         var snatch = require( __dirname + '/js/snatch.js' )
-        snatch.init( opt );
-        snatch.snatch();
+        snatch.snatch( opt );
     } );
 
 program

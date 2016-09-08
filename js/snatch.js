@@ -13,28 +13,96 @@ exports = module.exports = snatch;
 function snatch( options ) {
     this.options = $.extending( this.options, options );
     this.analyze = new html_analyze();
+    this.config = $.load_by( this.options.config );
 
     return this;
 }
 
 snatch.__proto__ = {
-    snatch : function( options, callback ) {
+    snatch : function( options ) {
         var _s = new snatch( options );
-        _s.snatch( callback );
+        _s.snatch();
     },
 };
 
 snatch.prototype = {
     options : {
-        config : "../data/snatch.json",
+        name : "",
+        config : __dirname + "/../data/snatch.json",
         save_path : "",
         assort : false, // TODO: image analysis [https://cloud.google.com/vision/]
     },
 
-    snatch : function( callback ) {
+    /**
+     * {
+     *     url : "",
+     *     attr : "",
+     *     list : false || {
+     *         // TODO:
+     *     }
+     * }
+     */
+    config : null,
+
+    snatch : function( url ) {
+        var _self = this;
+        var _url = url || this.config[this.options.name].url;
+        var _sm = _self.analyze.load_by_network( _url );
+
+        _sm.on( 'readable', function() {
+            var op;
+            try {
+                op = _self.analyze.parse( _sm );
+            } catch ( err ) {
+                if ( "string" === typeof err ) {
+                    err = `\n${err}\nform:\n\t${_url}`;
+                }
+                throw err;
+            };
+
+            for ( var idx in op ) {
+                op[idx].iterator( function() {
+                    if ( this.tagName === 'img' ) {
+                        var _img_url = this.getAttribute( this.config[this.options.name].attr || 'src' );
+                        if ( _img_url ) {
+                            save_img( _img_url );
+                        }
+                    }
+
+                    if ( this.tagName === 'a' && this.getAttribute( 'href' ) ) {
+                    }
+                } );
+            }
+        } );
+    },
+
+    save_img : function( url ) {
+        var file_name = url.substr( url.lastIndexOf( '/' ) + 1 );
+        var temp_path = `${process.env.temp}\${file_name}`;
+        var img_path = `${this.options.save_path}\${file_name}`;
+
+        $.get( url, 'binary', ( err, img_data ) => {
+            if ( err ) { callback( err ); return; }
+
+            if ( img_data ) {
+                fs.writeFile( temp_path, img_data, { encoding: 'binary', flag : 'w' }, function( err ) {
+                    if ( err ) { console.log( err ); return; }
+
+                    // TODO : filter image.
+
+                    var rs = fs.createReadStream( temp_path );
+                    rs.pipe( fs.createWriteStream( img_path ) );
+                    rs.on( 'end', function() {
+                        console.log( `${img_path} saved.` );
+                        fs.unlinkSync( temp_path );
+                    } );
+                } );
+            }
+        } );
     },
 };
 
+/*
 var options = {
     url: null,
     url_parsed: null,
@@ -212,3 +280,4 @@ exports.snatch = function() {
     exists_domains[ options.url.pathname ] = options.depth;
     search_url( options.url.href, options.depth );
 }
+*/

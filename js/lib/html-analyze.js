@@ -9,7 +9,8 @@ const https = require( 'https' );
 
 exports = module.exports = html_analyze;
 
-function html_analyze ( opt ) {
+function html_analyze ( options ) {
+    this.options = $.extending( this.options, options );
     return this;
 }
 
@@ -304,8 +305,7 @@ html_analyze.__proto__ = {
             encoding: 'utf8',
             objectMode: false,
         } );
-        rb._read = function _read( size ) {
-        };
+        rb._read = () => {}
 
         rb.pause();
 
@@ -321,15 +321,24 @@ html_analyze.__proto__ = {
      * load document from file.
      */
     load_by_file : function( path ) {
+        var rb = new stream.Readable( {
+            encoding : "utf8",
+            objectMode : false,
+        } );
+
+        rb._read = () => {};
+
+        rb.pause();
+
         if ( fs.existsSync ( path ) ) {
-            var rs = fs.createReadStream( path, {
-                encoding: 'utf8',
+            fs.readFile( path, "utf8", ( err, data ) => {
+                if ( data ) {
+                    rb.push( data );
+                }
             } );
-
-            rs.pause();
-
-            return rs;
         }
+
+        return rb;
     },
 
     /**
@@ -338,20 +347,30 @@ html_analyze.__proto__ = {
      *
      * load document from internat.
      */
-    load_by_network : function ( url, callback ) {
-        let _http = /https:.+?/i.test( url ) ? https : http;
-
-        _http.get( url, ( res ) => {
-            res.setEncoding( 'utf8' );
-            res.pause();
-            callback( res );
+    load_by_network : function ( url ) {
+        var rb = new stream.Readable( {
+            encoding: 'utf8',
+            objectMode : false,
         } );
+
+        rb._read = () => {};
+
+        rb.pause();
+
+        $.get( url, "utf8", function( err, data ) {
+            if ( data ) {
+                rb.push( data );
+            }
+        } );
+
+        return rb;
     },
 };
 
 
 html_analyze.prototype = {
     options : {
+        strict : false,
         replacer : '\n',
         space : '  ',
     },
@@ -365,43 +384,15 @@ html_analyze.prototype = {
     },
 
     load_by_string : function( text ) {
-        var bf = new Buffer( text );
-        var rb = new stream.Readable( {
-            encoding: 'utf8',
-            objectMode: false,
-        } );
-        rb._read = function _read( size ) {
-        };
-
-        rb.pause();
-
-        rb.push( bf );
-
-        return rb;
+        return html_analyze.load_by_string( text );
     },
 
     load_by_file : function( path ) {
-        if ( fs.existsSync ( path ) ) {
-            var rs = fs.createReadStream( path, {
-                encoding: 'utf8',
-            } );
-
-            rs.pause();
-
-            return rs;
-        }
+        return html_analyze.load_by_file( path );
     },
 
-    load_by_network : function ( url, callback ) {
-        let _http = /https:.+?/i.test( url ) ? https : http;
-
-        var _ct = "";
-
-        return _http.get( url, ( res ) => {
-            res.setEncoding( 'utf8' );
-            res.pause();
-            callback( res );
-        } );
+    load_by_network : function ( url ) {
+        return html_analyze.load_by_network( url );
     },
 
     parse : function( stm ) {
@@ -508,12 +499,34 @@ html_analyze.prototype = {
                             continue;
                         } else {
                             // error end of tags.
-                            throw this._exception( "error end of tags." );
+                            if ( this.options.strict ) {
+                                throw this._exception( "error end of tags." );
+                            } else {
+                                if ( parent && parent.tagName === _n.chunk.trim() ) {
+                                    // this._unshift( stm, `</${_n.chunk}>` );
+                                    this._unshift( stm, next.data + '/' + _n.chunk + _n.data );
+                                    return _nodes;
+                                }
+                            }
                         }
                         break;
                     } else {
-                        this._unshift( stm, next.data + _n );
-                        return _nodes;
+                        _n = this._do_while( stm, ">" );
+                        if ( parent ) {
+                            if ( parent.tagName === _n.chunk.trim() ) {
+                                // this._unshift( stm, `</${_n.chunk}>` );
+                                this._unshift( stm, next.data + '/' + _n.chunk + _n.data );
+                                return _nodes;
+                            } else {
+                                if ( this.options.strict ) {
+                                    throw this._exception( "error end of tags." );
+                                }
+                                continue;
+                            }
+                        } else {
+                            this._unshift( stm, next.data + _n );
+                            return _nodes;
+                        }
                     }
                 } else {
                     this._unshift( stm, _n );

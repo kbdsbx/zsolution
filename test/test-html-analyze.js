@@ -48,6 +48,7 @@ function test_html_analyze () {
     }
 
     for ( var i in test_html_analyze.error_cases ) {
+        var _ana = new html_analyze( { strict: true } );
         var str_stream = _ana.load_by_string( test_html_analyze.error_cases[i].input );
 
         assert.throws( () => {
@@ -706,6 +707,43 @@ test_html_analyze.__proto__ = {
                 </pre>
                 `,
         },
+        {
+            input : `
+                <p>
+                    <a>
+                    </a>
+                    </a>
+                    <br>
+                </p>`,
+            output : [ {
+                prefix: null,
+                localName : 'p',
+                tagName : 'p',
+                nodeType : 'element',
+                nodeName : 'p',
+                attributes : [],
+                childNodes : [ {
+                    prefix: null,
+                    localName : 'a',
+                    tagName : 'a',
+                    nodeType : 'element',
+                    nodeName : 'a',
+                    attributes : [],
+                }, {
+                    prefix: null,
+                    localName : 'br',
+                    tagName : 'br',
+                    nodeType : 'element',
+                    nodeName : 'br',
+                    attributes : [],
+                } ],
+            } ],
+            stringify : `
+                <p>
+                    <a></a>
+                    <br>
+                </p>`,
+        }
         /*
         */
     ],
@@ -761,17 +799,9 @@ test_html_analyze.__proto__ = {
     },
 
     test_load_by_network : function( ana ) {
-        var str_stream = ana.load_by_network( 'https://www.baidu.com', function( str_stream ) {
-            /*
-            str_stream.on( 'readable', function() {
-                res.pause();
-                console.log( str_stream.read( 6 ) );
-            } );
-            */
-        } );
+        var str_stream = ana.load_by_network( 'https://www.baidu.com' );
         str_stream.on( 'readable', function() {
-            res.pause();
-            console.log( str_stream.read( 6 ) );
+            assert( str_stream.read( 6 ), '<!DOCT' );
         } );
     },
 

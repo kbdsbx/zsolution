@@ -37,6 +37,7 @@ html_compile.prototype = {
         output : true,
     },
     analyze_option : {
+        strict : true,
         replacer : '\n',
         space : '    ',
     },
