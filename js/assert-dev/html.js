@@ -101,7 +101,7 @@ html_compile.prototype = {
         _self.options.base_path = path.normalize( _self.options.base_path );
         _self.options.new_base_path = path.normalize( _self.options.new_base_path );
 
-        var _sm = _self.analyze.load_by_string( fs.readFileSync( _self.options.path ) );
+        var _sm = $.load_by_string( fs.readFileSync( _self.options.path ) );
 
         var op = _self.analyze.parse( _sm );
 

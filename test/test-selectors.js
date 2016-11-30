@@ -8,7 +8,7 @@ function test_selectors () {
     var _query = new query_selector();
 
     for ( var i in test_selectors.cases ) {
-        var _stm = _query.load_by_string( test_selectors.cases[i].input );
+        var _stm = $.load_by_string( test_selectors.cases[i].input );
         var expected = _query.parse( _stm );
         var actual = test_selectors.cases[i].output;
 
@@ -137,23 +137,30 @@ test_selectors.__proto__ = {
             } ],
         },
         {
-            input : `:nth-child(:odd):nth-last-child(:odd):first-child:last-child:only-child`,
+            input : `:nth-child(odd):nth-last-child(odd):first-child:last-child:only-child`,
             output : [ {
-                p_nth_child : ':odd',
-                p_nth_last_child : ':odd',
-                p_first_child : true,
-                p_last_child : true,
-                p_only_child : true,
+                p_nth_child : [ 'odd', '1' ],
+                p_nth_last_child : [ 'odd', '1' ],
             } ],
         },
         {
-            input : `:nth-of-type(:even):nth-last-of-type(:even):first-of-type:last-of-type:only-of-type`,
+            input : `:nth-child(odd):first-child`,
             output : [ {
-                p_nth_of_type: ':even',
-                p_nth_last_of_type : ':even',
-                p_first_of_type : true,
-                p_last_of_type : true,
-                p_only_of_type : true,
+                p_nth_child : [ 'odd', '1' ],
+            } ],
+        },
+        {
+            input : `:nth-of-type(even):nth-last-of-type(even):first-of-type:last-of-type:only-of-type`,
+            output : [ {
+                p_nth_of_type: [ 'even', '1' ],
+                p_nth_last_of_type : [ 'even', '1' ],
+            } ],
+        },
+        {
+            input : `:nth-last-of-type(even):first-of-type`,
+            output : [ {
+                p_nth_of_type: [ '1' ],
+                p_nth_last_of_type : [ 'even' ],
             } ],
         },
         {

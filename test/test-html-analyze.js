@@ -10,7 +10,7 @@ function test_html_analyze () {
     var _ana = new html_analyze();
 
     for ( var i in test_html_analyze.cases ) {
-        var str_stream = _ana.load_by_string( test_html_analyze.cases[i].input );
+        var str_stream = $.load_by_string( test_html_analyze.cases[i].input );
 
         var output = _ana.parse( str_stream );
 
@@ -49,7 +49,7 @@ function test_html_analyze () {
 
     for ( var i in test_html_analyze.error_cases ) {
         var _ana = new html_analyze( { strict: true } );
-        var str_stream = _ana.load_by_string( test_html_analyze.error_cases[i].input );
+        var str_stream = $.load_by_string( test_html_analyze.error_cases[i].input );
 
         assert.throws( () => {
             _ana.parse( str_stream );
@@ -759,7 +759,7 @@ test_html_analyze.__proto__ = {
     } ],
 
     test_load_by_string : function( ana ) {
-        var str_stream = ana.load_by_string( 'Text' );
+        var str_stream = $.load_by_string( 'Text' );
 
         assert( str_stream.read( 1 ), 'T' );
 
@@ -783,7 +783,7 @@ test_html_analyze.__proto__ = {
     },
 
     test_load_by_file : function ( ana ) {
-        var str_stream = ana.load_by_file( __dirname + '/data/index.html' );
+        var str_stream = $.load_by_file( __dirname + '/data/index.html' );
         var stringify = "";
 
         str_stream.on( 'readable', function() {
@@ -799,14 +799,14 @@ test_html_analyze.__proto__ = {
     },
 
     test_load_by_network : function( ana ) {
-        var str_stream = ana.load_by_network( 'https://www.baidu.com' );
+        var str_stream = $.load_by_network( 'https://www.baidu.com' );
         str_stream.on( 'readable', function() {
             assert( str_stream.read( 6 ), '<!DOCT' );
         } );
     },
 
     test_do_while : function( ana ) {
-        var str_stream = ana.load_by_string( '<!DOCTYPE html>' );
+        var str_stream = $.load_by_string( '<!DOCTYPE html>' );
         var idx;
 
         idx = ana._do_while( str_stream, "<", "!", "\\w", " " );
@@ -831,7 +831,7 @@ test_html_analyze.__proto__ = {
     },
 
     test_attribute : function ( ana ) {
-        var str_stream = ana.load_by_string( '<div></div>' );
+        var str_stream = $.load_by_string( '<div></div>' );
         var output = ana.parse( str_stream );
 
         assert.ok( output[0].setAttribute );
@@ -869,7 +869,7 @@ test_html_analyze.__proto__ = {
     },
 
     test_node : function ( ana ) {
-        var str_stream = ana.load_by_string( '<div></div>' );
+        var str_stream = $.load_by_string( '<div></div>' );
         var output = ana.parse( str_stream );
 
         assert.ok( output[0].hasChildNodes );
@@ -878,7 +878,7 @@ test_html_analyze.__proto__ = {
     },
 
     test_iterator : function ( ana ) {
-        var str_stream = ana.load_by_string( '<div><div><a></a><b></b><i></i></div></div>' );
+        var str_stream = $.load_by_string( '<div><div><a></a><b></b><i></i></div></div>' );
         var output = ana.parse( str_stream );
 
         var idx = 0;
@@ -910,16 +910,16 @@ test_html_analyze.__proto__ = {
     },
 
     test_child : function( ana ) {
-        var str_stream = ana.load_by_string( '<div class="parent"><b class="firstchild"></b></div>' );
+        var str_stream = $.load_by_string( '<div class="parent"><b class="firstchild"></b></div>' );
         var output = ana.parse( str_stream );
 
-        output[0].appendChild( ana.parse( ana.load_by_string( '<c class="lastchild"></c>' ) )[0] );
+        output[0].appendChild( ana.parse( $.load_by_string( '<c class="lastchild"></c>' ) )[0] );
 
         var h = ana.stringify( output );
 
         assert.equal( h, '<div class="parent">\n  <b class="firstchild"></b>\n  <c class="lastchild"></c>\n</div>' );
 
-        output[0].insertBefore( ana.parse( ana.load_by_string( '<a class="newchild"></a>' ) )[0], output[0].childNodes[0] );
+        output[0].insertBefore( ana.parse( $.load_by_string( '<a class="newchild"></a>' ) )[0], output[0].childNodes[0] );
 
         h = ana.stringify( output );
 

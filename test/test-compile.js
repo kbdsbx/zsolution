@@ -12,7 +12,7 @@ function test_compile () {
     var _ana = new html_analyze();
 
     for ( var i in test_compile.cases ) {
-        var stm = _ana.load_by_string( test_compile.cases[i].input );
+        var stm = $.load_by_string( test_compile.cases[i].input );
 
         var actual = test_compile.cases[i].output;
         _h.compile( {}, stm, ( expected ) => {

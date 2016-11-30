@@ -143,6 +143,135 @@ selector.prototype = {
 
 };
 
+query_selector.__proto__ = {
+
+    parse : function( stm ) {
+        var _sel = new query_selector();
+        return _sel.parse( stm );
+    },
+
+    /**
+     * 查询全部selector
+     */
+    query_all : function( selectors, html ) {
+        var _matches = [];
+
+        html.iterator( function() {
+            var _self = this;
+
+            for ( var idx in selectors ) {
+                if ( query_selector._match( selectors[idx], this ) ) {
+                    _matches.push( this );
+                }
+            }
+        } );
+
+        return _matches;
+    },
+
+    _match( sel, ele ) {
+        // name
+        if ( sel.p_name && sel.p_name !== '*' ) {
+            if ( sel.p_name !== ele.tagName ) {
+                return false;
+            }
+        }
+
+        // :not
+        if ( sel.p_not ) {
+            for ( var idx in sel.p_not ) {
+                if ( query_selector._match( sel.p_not[idx], ele ) ) {
+                    return false;
+                }
+            }
+        }
+
+        // :matches
+        if ( sel.p_matches ) {
+            for ( var idx in sel.p_matches ) {
+                if ( ! query_selector._match( sel.p_matches[idx], ele ) ) {
+                    return false;
+                }
+            }
+        }
+
+        // :has
+        if ( sel.p_has ) {
+            for ( var idx in sel.p_has ) {
+                if ( query_selector.query_all( sel.p_has, html ).length === 0 ) {
+                    return false;
+                }
+            }
+        }
+
+        // attributes
+        if ( sel.p_attrs && sel.p_attrs.length !== 0 ) {
+            for ( var idx in sel.p_attrs ) {
+                if ( sel.p_attrs[idx] === [] ) {
+                    if ( ! ele.hasAttribute( idx ) ) {
+                        return false;
+                    }
+                }
+
+                var _attr = ele.getAttribute( idx );
+
+                for ( var i in sel.p_attrs[idx] ) {
+                    var _ap = sel.p_attrs[idx][i];
+
+                    if ( ! new RegExp( _ap, 'i' ).test( _attr ) ) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // :root
+        if ( sel.p_root ) {
+            if ( ele.parentNode ) {
+                return false;
+            }
+        }
+
+        // :empty
+        if ( sel.p_empty ) {
+            if ( ele.hasChildNodes ) {
+                return false;
+            }
+        }
+
+        // :blank
+        if ( sel.p_blank ) {
+            var _blank = true;
+            ele.iterator( function() {
+                if ( this.nodeValue && ! /^\s*$/i.test( this.nodeValue ) ) {
+                    _blank = false;
+                    return true;
+                }
+            } );
+            if ( ! _blank ) {
+                return false;
+            }
+        }
+
+        // :nth-child
+        // :nth-last-child
+        // :first-child
+        // :last-child
+        // :only-child
+
+        // :nth-of-type
+        // :nth-last-of-type
+        // :first-of-type
+        // :last-of-type
+        // :only-of-type
+
+        return true;
+    },
+
+    query : function( selectors, html ) {
+    },
+};
+
 query_selector.prototype = {
     load_by_string : function( text ) {
         var bf = new Buffer( text );
@@ -469,34 +598,72 @@ query_selector.prototype = {
                 _selector.p_blank = true;
                 break;
             case "nth-child":
-                _selector.p_nth_child = _val;
+                _selector.p_nth_child = _selector.p_nth_child || [];
+                if ( _selector.p_nth_child.indexOf( _val ) === -1 ) {
+                    _selector.p_nth_child.push( _val );
+                }
                 break;
             case "nth-last-child":
-                _selector.p_nth_last_child = _val;
+                _selector.p_nth_last_child = _selector.p_nth_last_child || [];
+                if ( _selector.p_nth_last_child.indexOf( _val ) === -1 ) {
+                    _selector.p_nth_last_child.push( _val );
+                }
                 break;
             case "first-child":
-                _selector.p_first_child = true;
+                _selector.p_nth_child = _selector.p_nth_child || [];
+                if ( _selector.p_nth_child.indexOf( '1' ) === -1 ) {
+                    _selector.p_nth_child.push( '1' );
+                }
                 break;
             case "last-child":
-                _selector.p_last_child = true;
+                _selector.p_nth_last_child = _selector.p_nth_last_child || [];
+                if ( _selector.p_nth_last_child.indexOf( '1' ) === -1 ) {
+                    _selector.p_nth_last_child.push( '1' );
+                }
                 break;
             case "only-child":
-                _selector.p_only_child = true;
+                _selector.p_nth_child = _selector.p_nth_child || [];
+                if ( _selector.p_nth_child.indexOf( '1' ) === -1 ) {
+                    _selector.p_nth_child.push( '1' );
+                }
+                _selector.p_nth_last_child = _selector.p_nth_last_child || [];
+                if ( _selector.p_nth_last_child.indexOf( '1' ) === -1 ) {
+                    _selector.p_nth_last_child.push( '1' );
+                }
                 break;
             case "nth-of-type":
-                _selector.p_nth_of_type = _val;
+                _selector.p_nth_of_type = _selector.p_nth_of_type || [];
+                if ( _selector.p_nth_of_type.indexOf( _val ) === -1 ) {
+                    _selector.p_nth_of_type.push( _val );
+                }
                 break;
             case "nth-last-of-type":
-                _selector.p_nth_last_of_type = _val;
+                _selector.p_nth_last_of_type = _selector.p_nth_last_of_type || [];
+                if ( _selector.p_nth_last_of_type.indexOf( _val ) === -1 ) {
+                    _selector.p_nth_last_of_type.push( _val );
+                }
                 break;
             case "first-of-type":
-                _selector.p_first_of_type = true;
+                _selector.p_nth_of_type = _selector.p_nth_of_type || [];
+                if ( _selector.p_nth_of_type.indexOf( '1' ) === -1 ) {
+                    _selector.p_nth_of_type.push( '1' );
+                }
                 break;
             case "last-of-type":
-                _selector.p_last_of_type = true;
+                _selector.p_nth_last_of_type = _selector.p_nth_last_of_type || [];
+                if ( _selector.p_nth_last_of_type.indexOf( '1' ) === -1 ) {
+                    _selector.p_nth_last_of_type.push( '1' );
+                }
                 break;
             case "only-of-type":
-                _selector.p_only_of_type = true;
+                _selector.p_nth_of_type = _selector.p_nth_of_type || [];
+                if ( _selector.p_nth_of_type.indexOf( '1' ) === -1 ) {
+                    _selector.p_nth_of_type.push( '1' );
+                }
+                _selector.p_nth_last_of_type = _selector.p_nth_last_of_type || [];
+                if ( _selector.p_nth_last_of_type.indexOf( '1' ) === -1 ) {
+                    _selector.p_nth_last_of_type.push( '1' );
+                }
                 break;
 
             default:

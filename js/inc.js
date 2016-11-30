@@ -12,6 +12,8 @@ const http = require( 'http' );
 const https = require( 'https' );
 const path = require( 'path' );
 const crypto = require( 'crypto' );
+const stream = require( 'stream' );
+const buffer = require( 'buffer' );
 const data_file = __dirname + '/../data/data.json';
 
 // load json from file system;
@@ -375,4 +377,75 @@ exports.deepsEqual = function ( obj_first, obj_last, expression ) {
     return true;
 }
 
+/**
+ * @string  text    contents of document.
+ * @return          readable stream.
+ *
+ * load document from string.
+ */
+exports.load_by_string = function( text ) {
+    var bf = new Buffer( text );
+    var rb = new stream.Readable( {
+        encoding: 'utf8',
+        objectMode: false,
+    } );
+    rb._read = () => {}
 
+    rb.pause();
+
+    rb.push( bf );
+
+    return rb;
+}
+
+/**
+ * @string  path    file path that will be analysis.
+ * @return          readable stream.
+ *
+ * load document from file.
+ */
+exports.load_by_file = function( path ) {
+    var rb = new stream.Readable( {
+        encoding : "utf8",
+        objectMode : false,
+    } );
+
+    rb._read = () => {};
+
+    rb.pause();
+
+    if ( fs.existsSync ( path ) ) {
+        fs.readFile( path, "utf8", ( err, data ) => {
+            if ( data ) {
+                rb.push( data );
+            }
+        } );
+    }
+
+    return rb;
+}
+
+/**
+ * @string  url     international url.
+ * @return          readable stream.
+ *
+ * load document from internat.
+ */
+exports.load_by_network = function ( url ) {
+    var rb = new stream.Readable( {
+        encoding: 'utf8',
+        objectMode : false,
+    } );
+
+    rb._read = () => {};
+
+    rb.pause();
+
+    $.get( url, "utf8", function( err, data ) {
+        if ( data ) {
+            rb.push( data );
+        }
+    } );
+
+    return rb;
+}

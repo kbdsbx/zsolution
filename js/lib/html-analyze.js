@@ -1,18 +1,36 @@
 "use strict"
 
-const stream = require( 'stream' );
-const buffer = require( 'buffer' );
 const fs = require( 'fs' );
 const $ = require( __dirname + '/../inc.js' );
-const http = require( 'http' );
-const https = require( 'https' );
+const query_selector = require( __dirname + '/selector.js' );
 
 exports = module.exports = html_analyze;
+
+/**
+ * HTML analyzer;
+ */
 
 function html_analyze ( options ) {
     this.options = $.extending( this.options, options );
     return this;
 }
+
+
+/**
+ * Node List;
+ */
+
+function NodeList() {
+    return this;
+}
+
+NodeList.prototype = {
+    length: 0,
+    item: function( index ) {
+        return _node_items[index];
+    },
+    _node_items : [],
+};
 
 /**
  * Base node;
@@ -105,7 +123,7 @@ node.prototype = {
                 return;
             }
         }
-    }
+    },
 };
 
 /**
@@ -176,15 +194,71 @@ element.prototype = $.merging( new node(), {
             }
         }
     },
+    
+    getElementsByTagName : function( localName ) {
+        var _eles = [];
+        this.iterator( function() {
+            if ( this.localName === localName.trim() ) {
+                _eles.push( this );
+            }
+        } );
+
+        return _eles;
+    },
+
+    getElementsByTagNameNS : function( namespace, localName ) {
+        var _eles = [];
+
+        this.iterator( function() {
+            if ( this.prefix === namespace.trim() && this.localName === localName.trim() ) {
+                _eles.push( this );
+            }
+        } );
+
+        return _eles;
+    },
+
+    getElementsByClassName : function( classNames ) {
+        var _match_classes = classNames.split( ' ' );
+        var _eles = [];
+        
+        this.iterator( function() {
+            if ( this.hasAttribute( 'class' ) ) {
+                var _class = this.getAttribute( 'class' );
+                for ( var idx in _match_classes ) {
+                    if ( ! new RegExp( `\b${_match_classes[idx]}\b`, i ).test( _class ) ) {
+                        return;
+                    }
+                }
+                _eles.push( this );
+            }
+        } );
+
+        return _eles;
+    },
+
+    getElementById : function( id ) {
+        this.iterator( function() {
+            if ( this.hasAttribute( 'id' ) && this.getAttribute( 'id' ) === id.trim() ) {
+                return this;
+            }
+        } );
+
+        return null;
+    },
 
     querySelector : function( str_selectors ) {
-        var _sel = new selector( str_selectors );
-        return _sel.query( this );
+        var _query_stm = $.load_by_string( str_selectors );
+        var _sels = query_selector.parse( _query_stm );
+
+        return query_selector.query( _sels );
     },
 
     querySelectorAll : function( str_selectors ) {
-        var _sel = new selector( str_selectors );
-        return _sel.query_all( this );
+        var _query_stm = $.load_by_string( str_selectors );
+        var _sels = query_selector.parse( _query_stm );
+
+        return query_selector.query_all( _sels );
     }
 } );
 
@@ -293,78 +367,7 @@ function html_analyze_exception ( msg, stack ) {
 }
 
 html_analyze.__proto__ = {
-    /**
-     * @string  text    contents of document.
-     * @return          readable stream.
-     *
-     * load document from string.
-     */
-    load_by_string : function( text ) {
-        var bf = new Buffer( text );
-        var rb = new stream.Readable( {
-            encoding: 'utf8',
-            objectMode: false,
-        } );
-        rb._read = () => {}
 
-        rb.pause();
-
-        rb.push( bf );
-
-        return rb;
-    },
-
-    /**
-     * @string  path    file path that will be analysis.
-     * @return          readable stream.
-     *
-     * load document from file.
-     */
-    load_by_file : function( path ) {
-        var rb = new stream.Readable( {
-            encoding : "utf8",
-            objectMode : false,
-        } );
-
-        rb._read = () => {};
-
-        rb.pause();
-
-        if ( fs.existsSync ( path ) ) {
-            fs.readFile( path, "utf8", ( err, data ) => {
-                if ( data ) {
-                    rb.push( data );
-                }
-            } );
-        }
-
-        return rb;
-    },
-
-    /**
-     * @string  url     international url.
-     * @return          readable stream.
-     *
-     * load document from internat.
-     */
-    load_by_network : function ( url ) {
-        var rb = new stream.Readable( {
-            encoding: 'utf8',
-            objectMode : false,
-        } );
-
-        rb._read = () => {};
-
-        rb.pause();
-
-        $.get( url, "utf8", function( err, data ) {
-            if ( data ) {
-                rb.push( data );
-            }
-        } );
-
-        return rb;
-    },
 };
 
 
@@ -384,15 +387,15 @@ html_analyze.prototype = {
     },
 
     load_by_string : function( text ) {
-        return html_analyze.load_by_string( text );
+        return $.load_by_string( text );
     },
 
     load_by_file : function( path ) {
-        return html_analyze.load_by_file( path );
+        return $.load_by_file( path );
     },
 
     load_by_network : function ( url ) {
-        return html_analyze.load_by_network( url );
+        return $.load_by_network( url );
     },
 
     parse : function( stm ) {
